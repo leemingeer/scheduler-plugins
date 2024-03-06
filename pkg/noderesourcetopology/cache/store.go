@@ -17,6 +17,7 @@ limitations under the License.
 package cache
 
 import (
+	topologyv1alpha1 "github.com/leemingeer/noderesourcetopology/pkg/apis/topology/v1alpha1"
 	"strings"
 
 	corev1 "k8s.io/api/core/v1"
@@ -25,10 +26,8 @@ import (
 	podlisterv1 "k8s.io/client-go/listers/core/v1"
 	"k8s.io/klog/v2"
 
-	topologyv1alpha2 "github.com/k8stopologyawareschedwg/noderesourcetopology-api/pkg/apis/topology/v1alpha2"
-	topologyv1alpha2attr "github.com/k8stopologyawareschedwg/noderesourcetopology-api/pkg/apis/topology/v1alpha2/helper/attribute"
 	"github.com/k8stopologyawareschedwg/podfingerprint"
-
+	topologyv1alpha1attr "github.com/leemingeer/noderesourcetopology/pkg/apis/topology/v1alpha1/helper/attribute"
 	apiconfig "sigs.k8s.io/scheduler-plugins/apis/config"
 	"sigs.k8s.io/scheduler-plugins/pkg/noderesourcetopology/resourcerequests"
 	"sigs.k8s.io/scheduler-plugins/pkg/noderesourcetopology/stringify"
@@ -38,12 +37,12 @@ import (
 // nrtStore maps the NRT data by node name. It is not thread safe and needs to be protected by a lock.
 // data is intentionally copied each time it enters and exists the store. E.g, no pointer sharing.
 type nrtStore struct {
-	data map[string]*topologyv1alpha2.NodeResourceTopology
+	data map[string]*topologyv1alpha1.NodeResourceTopology
 }
 
 // newNrtStore creates a new nrtStore and initializes it with copies of the provided Node Resource Topology data.
-func newNrtStore(nrts []topologyv1alpha2.NodeResourceTopology) *nrtStore {
-	data := make(map[string]*topologyv1alpha2.NodeResourceTopology, len(nrts))
+func newNrtStore(nrts []topologyv1alpha1.NodeResourceTopology) *nrtStore {
+	data := make(map[string]*topologyv1alpha1.NodeResourceTopology, len(nrts))
 	for _, nrt := range nrts {
 		data[nrt.Name] = nrt.DeepCopy()
 	}
@@ -60,7 +59,7 @@ func (nrs nrtStore) Contains(nodeName string) bool {
 
 // GetNRTCopyByNodeName returns a copy of the stored Node Resource Topology data for the given node,
 // or nil if no data is associated to that node.
-func (nrs *nrtStore) GetNRTCopyByNodeName(nodeName string) *topologyv1alpha2.NodeResourceTopology {
+func (nrs *nrtStore) GetNRTCopyByNodeName(nodeName string) *topologyv1alpha1.NodeResourceTopology {
 	obj, ok := nrs.data[nodeName]
 	if !ok {
 		klog.V(3).InfoS("nrtcache: missing cached NodeTopology", "node", nodeName)
@@ -70,7 +69,7 @@ func (nrs *nrtStore) GetNRTCopyByNodeName(nodeName string) *topologyv1alpha2.Nod
 }
 
 // Update adds or replace the Node Resource Topology associated to a node. Always do a copy.
-func (nrs *nrtStore) Update(nrt *topologyv1alpha2.NodeResourceTopology) {
+func (nrs *nrtStore) Update(nrt *topologyv1alpha1.NodeResourceTopology) {
 	nrs.data[nrt.Name] = nrt.DeepCopy()
 	klog.V(5).InfoS("nrtcache: updated cached NodeTopology", "node", nrt.Name)
 }
@@ -124,7 +123,7 @@ func (rs *resourceStore) DeletePod(pod *corev1.Pod) bool {
 
 // UpdateNRT updates the provided Node Resource Topology object with the resources tracked in this store,
 // performing pessimistic overallocation across all the NUMA zones.
-func (rs *resourceStore) UpdateNRT(logID string, nrt *topologyv1alpha2.NodeResourceTopology) {
+func (rs *resourceStore) UpdateNRT(logID string, nrt *topologyv1alpha1.NodeResourceTopology) {
 	for key, res := range rs.data {
 		// We cannot predict on which Zone the workload will be placed.
 		// And we should totally not guess. So the only safe (and conservative)
@@ -198,13 +197,13 @@ func (cnt counter) Len() int {
 
 // podFingerprintForNodeTopology extracts without recomputing the pods fingerprint from
 // the provided Node Resource Topology object. Returns the expected fingerprint and the method to compute it.
-func podFingerprintForNodeTopology(nrt *topologyv1alpha2.NodeResourceTopology, method apiconfig.CacheResyncMethod) (string, bool) {
+func podFingerprintForNodeTopology(nrt *topologyv1alpha1.NodeResourceTopology, method apiconfig.CacheResyncMethod) (string, bool) {
 	wantsOnlyExclRes := false
-	if attr, ok := topologyv1alpha2attr.Get(nrt.Attributes, podfingerprint.Attribute); ok {
+	if attr, ok := topologyv1alpha1attr.Get(nrt.Attributes, podfingerprint.Attribute); ok {
 		if method == apiconfig.CacheResyncOnlyExclusiveResources {
 			wantsOnlyExclRes = true
 		} else if method == apiconfig.CacheResyncAutodetect {
-			attrMethod, ok := topologyv1alpha2attr.Get(nrt.Attributes, podfingerprint.AttributeMethod)
+			attrMethod, ok := topologyv1alpha1attr.Get(nrt.Attributes, podfingerprint.AttributeMethod)
 			if ok && (attrMethod.Value == podfingerprint.MethodWithExclusiveResources) {
 				wantsOnlyExclRes = true
 			}

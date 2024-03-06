@@ -18,9 +18,8 @@ package cache
 
 import (
 	"context"
+	topologyv1alpha1 "github.com/leemingeer/noderesourcetopology/pkg/apis/topology/v1alpha1"
 	"sync"
-
-	topologyv1alpha2 "github.com/k8stopologyawareschedwg/noderesourcetopology-api/pkg/apis/topology/v1alpha2"
 
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/types"
@@ -54,7 +53,7 @@ func NewDiscardReserved(client ctrlclient.Client) Interface {
 	}
 }
 
-func (pt *DiscardReserved) GetCachedNRTCopy(ctx context.Context, nodeName string, _ *corev1.Pod) (*topologyv1alpha2.NodeResourceTopology, bool) {
+func (pt *DiscardReserved) GetCachedNRTCopy(ctx context.Context, nodeName string, _ *corev1.Pod) (*topologyv1alpha1.NodeResourceTopology, bool) {
 	pt.rMutex.RLock()
 	defer pt.rMutex.RUnlock()
 	if t, ok := pt.reservationMap[nodeName]; ok {
@@ -63,7 +62,7 @@ func (pt *DiscardReserved) GetCachedNRTCopy(ctx context.Context, nodeName string
 		}
 	}
 
-	nrt := &topologyv1alpha2.NodeResourceTopology{}
+	nrt := &topologyv1alpha1.NodeResourceTopology{}
 	if err := pt.client.Get(ctx, types.NamespacedName{Name: nodeName}, nrt); err != nil {
 		return nil, false
 	}

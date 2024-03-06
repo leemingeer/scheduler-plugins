@@ -19,7 +19,7 @@ package noderesourcetopology
 import (
 	"context"
 	"fmt"
-
+	topologyv1alpha1 "github.com/leemingeer/noderesourcetopology/pkg/apis/topology/v1alpha1"
 	"gonum.org/v1/gonum/stat"
 
 	v1 "k8s.io/api/core/v1"
@@ -29,7 +29,6 @@ import (
 	"k8s.io/kubernetes/pkg/scheduler/framework"
 	apiconfig "sigs.k8s.io/scheduler-plugins/apis/config"
 
-	topologyv1alpha2 "github.com/k8stopologyawareschedwg/noderesourcetopology-api/pkg/apis/topology/v1alpha2"
 	"sigs.k8s.io/scheduler-plugins/pkg/util"
 )
 
@@ -64,7 +63,6 @@ func (tm *TopologyMatch) Score(ctx context.Context, state *framework.CycleState,
 	}
 
 	nodeTopology, ok := tm.nrtCache.GetCachedNRTCopy(ctx, nodeName, pod)
-
 	if !ok {
 		klog.V(4).InfoS("noderesourcetopology is not valid for node", "node", nodeName)
 		return 0, nil
@@ -105,9 +103,60 @@ func scoreForEachNUMANode(requested v1.ResourceList, numaList NUMANodeList, scor
 	return minScore
 }
 
+// scoreForEachSocket will iterate over all socket zones of the node and invoke the scoreStrategyFn func for every zone.
+// it will return the minimal score of all the calculated socket's score, in order to avoid edge cases.
+func scoreForEachSocket(requested v1.ResourceList, sockets Sockets, score scoreStrategyFn, resourceToWeightMap resourceToWeightMap) int64 {
+	//socketScores := make([]int64, len(sockets))
+	//minScore := int64(0)
+	socketScoreTotal := int64(0)
+	socketMeanScore := int64(0)
+	var UnMatchedSocketNum int
+	nodeAllocatable := make(v1.ResourceList)
+
+	// socket level most allocated
+	for i, _ := range sockets {
+		resourcePerSocket := sockets.GetSocketAvailable(i)
+		socketScore := score(requested, resourcePerSocket, resourceToWeightMap)
+		klog.InfoS("pod scope socket score", "socketID", i, "socket Score", socketScore)
+
+		socketScoreTotal += socketScore
+
+		for resourceName := range requested {
+			// ignore memory
+			if resourceName == "memory" {
+				continue
+			}
+			if v, ok := nodeAllocatable[resourceName]; ok {
+				v.Add(resourcePerSocket[resourceName])
+				nodeAllocatable[resourceName] = v
+			} else {
+				nodeAllocatable[resourceName] = resourcePerSocket[resourceName]
+			}
+
+			requested, allocatable := requested[resourceName], resourcePerSocket[resourceName]
+			if allocatable.CmpInt64(0) == 0 || requested.Cmp(allocatable) > 0 {
+				UnMatchedSocketNum += 1
+				klog.InfoS("pod scope socket score unmatched socket num", "socketID", i, "UnMatchedSocketNum", UnMatchedSocketNum)
+				break
+			}
+		}
+	}
+	if len(sockets) == UnMatchedSocketNum {
+		socketMeanScore = 0
+	} else {
+		socketMeanScore = socketScoreTotal / int64(len(sockets)-UnMatchedSocketNum)
+	}
+	klog.InfoS("pod scope socket level score part1", "socket Score", socketMeanScore)
+	// node level most allocated
+	nodeScore := score(requested, nodeAllocatable, resourceToWeightMap)
+	klog.InfoS("pod scope socket level score part2", "node Score", nodeScore)
+
+	return (socketMeanScore + nodeScore) / 2
+}
+
 func getScoringStrategyFunction(strategy apiconfig.ScoringStrategyType) (scoreStrategyFn, error) {
 	switch strategy {
-	case apiconfig.MostAllocated:
+	case apiconfig.MostAllocated, apiconfig.SocketAlignment:
 		return mostAllocatedScoreStrategy, nil
 	case apiconfig.LeastAllocated:
 		return leastAllocatedScoreStrategy, nil
@@ -121,7 +170,7 @@ func getScoringStrategyFunction(strategy apiconfig.ScoringStrategyType) (scoreSt
 	}
 }
 
-func podScopeScore(pod *v1.Pod, zones topologyv1alpha2.ZoneList, scorerFn scoreStrategyFn, resourceToWeightMap resourceToWeightMap) (int64, *framework.Status) {
+func podScopeScore(pod *v1.Pod, zones topologyv1alpha1.ZoneList, scorerFn scoreStrategyFn, resourceToWeightMap resourceToWeightMap) (int64, *framework.Status) {
 	// This code is in Admit implementation of pod scope
 	// https://github.com/kubernetes/kubernetes/blob/9ff3b7e744b34c099c1405d9add192adbef0b6b1/pkg/kubelet/cm/topologymanager/scope_pod.go#L52
 	// but it works with HintProviders, takes into account all possible allocations.
@@ -133,7 +182,7 @@ func podScopeScore(pod *v1.Pod, zones topologyv1alpha2.ZoneList, scorerFn scoreS
 	return finalScore, nil
 }
 
-func containerScopeScore(pod *v1.Pod, zones topologyv1alpha2.ZoneList, scorerFn scoreStrategyFn, resourceToWeightMap resourceToWeightMap) (int64, *framework.Status) {
+func containerScopeScore(pod *v1.Pod, zones topologyv1alpha1.ZoneList, scorerFn scoreStrategyFn, resourceToWeightMap resourceToWeightMap) (int64, *framework.Status) {
 	// This code is in Admit implementation of container scope
 	// https://github.com/kubernetes/kubernetes/blob/9ff3b7e744b34c099c1405d9add192adbef0b6b1/pkg/kubelet/cm/topologymanager/scope_container.go#L52
 	containers := append(pod.Spec.InitContainers, pod.Spec.Containers...)
@@ -149,6 +198,16 @@ func containerScopeScore(pod *v1.Pod, zones topologyv1alpha2.ZoneList, scorerFn 
 	klog.V(5).InfoS("container scope scoring final node score", "finalScore", finalScore)
 	return finalScore, nil
 }
+func PodScopeSocketScore(pod *v1.Pod, zones topologyv1alpha1.ZoneList, scorerFn scoreStrategyFn, resourceToWeightMap resourceToWeightMap) (int64, *framework.Status) {
+	// This code is in Admit implementation of pod scope
+	// https://github.com/kubernetes/kubernetes/blob/9ff3b7e744b34c099c1405d9add192adbef0b6b1/pkg/kubelet/cm/topologymanager/scope_pod.go#L52
+	// but it works with HintProviders, takes into account all possible allocations.
+	resources := util.GetPodEffectiveRequest(pod)
+	allocatablePerNUMA := createNUMANodeList(zones)
+	finalScore := scoreForEachSocket(resources, createSocketList(allocatablePerNUMA), scorerFn, resourceToWeightMap)
+	klog.V(5).InfoS("pod scope final node score", "finalScore", finalScore)
+	return finalScore, nil
+}
 
 func (tm *TopologyMatch) scoringHandlerFromTopologyManagerConfig(conf TopologyManagerConfig) scoringFn {
 	if tm.scoreStrategyType == apiconfig.LeastNUMANodes {
@@ -160,16 +219,22 @@ func (tm *TopologyMatch) scoringHandlerFromTopologyManagerConfig(conf TopologyMa
 		}
 		return nil // cannot happen
 	}
+	if tm.scoreStrategyType == apiconfig.SocketAlignment {
+		// currently we don't support containerScope score.
+		return func(pod *v1.Pod, zones topologyv1alpha1.ZoneList) (int64, *framework.Status) {
+			return PodScopeSocketScore(pod, zones, tm.scoreStrategyFunc, tm.resourceToWeightMap)
+		}
+	}
 	if conf.Policy != kubeletconfig.SingleNumaNodeTopologyManagerPolicy {
 		return nil
 	}
 	if conf.Scope == kubeletconfig.PodTopologyManagerScope {
-		return func(pod *v1.Pod, zones topologyv1alpha2.ZoneList) (int64, *framework.Status) {
+		return func(pod *v1.Pod, zones topologyv1alpha1.ZoneList) (int64, *framework.Status) {
 			return podScopeScore(pod, zones, tm.scoreStrategyFunc, tm.resourceToWeightMap)
 		}
 	}
 	if conf.Scope == kubeletconfig.ContainerTopologyManagerScope {
-		return func(pod *v1.Pod, zones topologyv1alpha2.ZoneList) (int64, *framework.Status) {
+		return func(pod *v1.Pod, zones topologyv1alpha1.ZoneList) (int64, *framework.Status) {
 			return containerScopeScore(pod, zones, tm.scoreStrategyFunc, tm.resourceToWeightMap)
 		}
 	}

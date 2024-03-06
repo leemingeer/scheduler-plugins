@@ -19,11 +19,12 @@ package noderesourcetopology
 import (
 	"k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/resource"
+	"k8s.io/klog/v2"
 	"k8s.io/kubernetes/pkg/scheduler/framework"
 )
 
 func mostAllocatedScoreStrategy(requested, allocatable v1.ResourceList, resourceToWeightMap resourceToWeightMap) int64 {
-	var numaNodeScore int64 = 0
+	var Score int64 = 0
 	var weightSum int64 = 0
 
 	for resourceName := range requested {
@@ -31,24 +32,52 @@ func mostAllocatedScoreStrategy(requested, allocatable v1.ResourceList, resource
 		// If NUMA zone doesn't have the requested resource, the score for that resource will be 0.
 		resourceScore := mostAllocatedScore(requested[resourceName], allocatable[resourceName])
 		weight := resourceToWeightMap.weight(resourceName)
-		numaNodeScore += resourceScore * weight
+		Score += resourceScore * weight
 		weightSum += weight
+
+		resRequest := requested[resourceName]
+		resAllocatable := allocatable[resourceName]
+		klog.V(3).InfoS("score node with most allocated policy", "resourceName", resourceName, "resource request", resRequest.Value(), "remaining", resAllocatable.Value(),
+			"resourceScore", resourceScore, "weight", weight, "scoreSum", Score, "weightSum", weightSum)
 	}
 
-	return numaNodeScore / weightSum
+	return Score / weightSum
 }
 
 // The used capacity is calculated on a scale of 0-MaxNodeScore (MaxNodeScore is
 // constant with value set to 100).
 // 0 being the lowest priority and 100 being the highest.
 // The more allocated resources the node has, the higher the score is.
-func mostAllocatedScore(requested, numaCapacity resource.Quantity) int64 {
-	if numaCapacity.CmpInt64(0) == 0 {
+func mostAllocatedScore(requested, capacity resource.Quantity) int64 {
+	if capacity.CmpInt64(0) == 0 {
 		return 0
 	}
-	if requested.Cmp(numaCapacity) > 0 {
+	if requested.Cmp(capacity) > 0 {
 		return 0
 	}
 
-	return requested.Value() * framework.MaxNodeScore / numaCapacity.Value()
+	return requested.Value() * framework.MaxNodeScore / capacity.Value()
+}
+
+func mostAllocatedNodeScoreStrategy(requested, allocatable v1.ResourceList, resourceToWeightMap resourceToWeightMap) int64 {
+	var Score int64 = 0
+	var weightSum int64 = 0
+
+	for resourceName := range requested {
+		// We don't care what kind of resources are being requested, we just iterate all of them.
+		// If NUMA zone doesn't have the requested resource, the score for that resource will be 0.
+
+		// 对于某一种资源，在整个node级别的资源使用率
+		resourceScore := mostAllocatedScore(requested[resourceName], allocatable[resourceName])
+		weight := resourceToWeightMap.weight(resourceName)
+		Score += resourceScore * weight
+		weightSum += weight
+
+		resRequest := requested[resourceName]
+		resAllocatable := allocatable[resourceName]
+		klog.V(3).InfoS("score node with most allocated policy", "resourceName", resourceName, "resource request", resRequest.Value(), "remaining", resAllocatable.Value(),
+			"resourceScore", resourceScore, "weight", weight, "scoreSum", Score, "weightSum", weightSum)
+	}
+
+	return Score / weightSum
 }

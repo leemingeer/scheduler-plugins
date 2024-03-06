@@ -18,10 +18,9 @@ package cache
 
 import (
 	"context"
+	topologyv1alpha1 "github.com/leemingeer/noderesourcetopology/pkg/apis/topology/v1alpha1"
 
 	corev1 "k8s.io/api/core/v1"
-
-	topologyv1alpha2 "github.com/k8stopologyawareschedwg/noderesourcetopology-api/pkg/apis/topology/v1alpha2"
 )
 
 type Interface interface {
@@ -32,7 +31,7 @@ type Interface interface {
 	// The pod argument is used only for logging purposes.
 	// Returns a boolean to signal the caller if the NRT data is clean. If false, then the node has foreign
 	// Pods detected - so it should be ignored or handled differently by the caller.
-	GetCachedNRTCopy(ctx context.Context, nodeName string, pod *corev1.Pod) (*topologyv1alpha2.NodeResourceTopology, bool)
+	GetCachedNRTCopy(ctx context.Context, nodeName string, pod *corev1.Pod) (*topologyv1alpha1.NodeResourceTopology, bool)
 
 	// NodeMaybeOverReserved declares a node was filtered out for not enough resources available.
 	// This means this node is eligible for a resync. When a node is marked discarded (dirty), it matters not

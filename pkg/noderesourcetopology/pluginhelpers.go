@@ -18,6 +18,7 @@ package noderesourcetopology
 
 import (
 	"fmt"
+	topologyv1alpha1 "github.com/leemingeer/noderesourcetopology/pkg/apis/topology/v1alpha1"
 	"strconv"
 	"strings"
 	"time"
@@ -28,8 +29,6 @@ import (
 	"k8s.io/klog/v2"
 	"k8s.io/kubernetes/pkg/scheduler/framework"
 
-	topologyv1alpha2 "github.com/k8stopologyawareschedwg/noderesourcetopology-api/pkg/apis/topology/v1alpha2"
-
 	ctrlclient "sigs.k8s.io/controller-runtime/pkg/client"
 
 	apiconfig "sigs.k8s.io/scheduler-plugins/apis/config"
@@ -38,7 +37,9 @@ import (
 )
 
 const (
-	maxNUMAId = 64
+	maxNUMAId   = 64
+	maxSocketId = 8
+	NPS         = 4
 )
 
 func initNodeTopologyInformer(tcfg *apiconfig.NodeResourceTopologyMatchArgs, handle framework.Handle) (nrtcache.Interface, error) {
@@ -98,7 +99,7 @@ func initNodeTopologyForeignPodsDetection(cfg *apiconfig.NodeResourceTopologyCac
 	nrtcache.SetupForeignPodsDetector(profileName, podSharedInformer, nrtCache)
 }
 
-func createNUMANodeList(zones topologyv1alpha2.ZoneList) NUMANodeList {
+func createNUMANodeList(zones topologyv1alpha1.ZoneList) NUMANodeList {
 	numaIDToZoneIDx := make([]int, maxNUMAId)
 	nodes := NUMANodeList{}
 	// filter non Node zones and create idToIdx lookup array
@@ -128,6 +129,46 @@ func createNUMANodeList(zones topologyv1alpha2.ZoneList) NUMANodeList {
 	return nodes
 }
 
+func createSocketList(nodes NUMANodeList) Sockets {
+	sockets := make(Sockets)
+	// filter non Node zones and create idToIdx lookup array
+	for _, node := range nodes {
+		socketID, err := getSocketID(node)
+		if err != nil {
+			klog.Error(err)
+			continue
+		}
+		sockets[socketID] = append(sockets[socketID], node)
+	}
+	return sockets
+}
+
+// GetSocketAvailable return unused resource
+func (s *Sockets) GetSocketAvailable(id int) corev1.ResourceList {
+	res := make(corev1.ResourceList)
+	for _, nodes := range (*s)[id] {
+		for resName, resInfo := range nodes.Resources {
+			if v, ok := res[resName]; ok {
+				v.Add(resInfo)
+				res[resName] = v
+			} else {
+				res[resName] = resInfo
+			}
+		}
+	}
+	return res
+}
+
+func getSocketID(node NUMANode) (int, error) {
+
+	socketID := node.NUMAID / NPS
+
+	if socketID > maxSocketId-1 || socketID < 0 {
+		return -1, fmt.Errorf("invalid socket id range socket id: %d", socketID)
+	}
+	return socketID, nil
+}
+
 func getID(name string) (int, error) {
 	splitted := strings.Split(name, "-")
 	if len(splitted) != 2 {
@@ -150,7 +191,7 @@ func getID(name string) (int, error) {
 	return numaID, nil
 }
 
-func extractCosts(costs topologyv1alpha2.CostList) map[int]int {
+func extractCosts(costs topologyv1alpha1.CostList) map[int]int {
 	nodeCosts := make(map[int]int)
 
 	// return early if CostList is missing
@@ -169,7 +210,7 @@ func extractCosts(costs topologyv1alpha2.CostList) map[int]int {
 	return nodeCosts
 }
 
-func extractResources(zone topologyv1alpha2.Zone) corev1.ResourceList {
+func extractResources(zone topologyv1alpha1.Zone) corev1.ResourceList {
 	res := make(corev1.ResourceList)
 	for _, resInfo := range zone.Resources {
 		res[corev1.ResourceName(resInfo.Name)] = resInfo.Available.DeepCopy()

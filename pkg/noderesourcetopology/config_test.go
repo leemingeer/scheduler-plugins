@@ -17,12 +17,11 @@ limitations under the License.
 package noderesourcetopology
 
 import (
+	topologyv1alpha1 "github.com/leemingeer/noderesourcetopology/pkg/apis/topology/v1alpha1"
 	"reflect"
 	"testing"
 
 	kubeletconfig "k8s.io/kubernetes/pkg/kubelet/apis/config"
-
-	topologyv1alpha2 "github.com/k8stopologyawareschedwg/noderesourcetopology-api/pkg/apis/topology/v1alpha2"
 )
 
 func TestIsValidScope(t *testing.T) {
@@ -122,7 +121,7 @@ func TestIsValidPolicy(t *testing.T) {
 func TestConfigFromAttributes(t *testing.T) {
 	tests := []struct {
 		name     string
-		attrs    topologyv1alpha2.AttributeList
+		attrs    topologyv1alpha1.AttributeList
 		expected TopologyManagerConfig
 	}{
 		{
@@ -132,12 +131,12 @@ func TestConfigFromAttributes(t *testing.T) {
 		},
 		{
 			name:     "empty",
-			attrs:    topologyv1alpha2.AttributeList{},
+			attrs:    topologyv1alpha1.AttributeList{},
 			expected: TopologyManagerConfig{},
 		},
 		{
 			name: "no-policy",
-			attrs: topologyv1alpha2.AttributeList{
+			attrs: topologyv1alpha1.AttributeList{
 				{
 					Name:  "topologyManagerScope",
 					Value: "pod",
@@ -149,7 +148,7 @@ func TestConfigFromAttributes(t *testing.T) {
 		},
 		{
 			name: "no-scope",
-			attrs: topologyv1alpha2.AttributeList{
+			attrs: topologyv1alpha1.AttributeList{
 				{
 					Name:  "topologyManagerPolicy",
 					Value: "restricted",
@@ -161,7 +160,7 @@ func TestConfigFromAttributes(t *testing.T) {
 		},
 		{
 			name: "complete-case-1",
-			attrs: topologyv1alpha2.AttributeList{
+			attrs: topologyv1alpha1.AttributeList{
 				{
 					Name:  "topologyManagerPolicy",
 					Value: "restricted",
@@ -178,7 +177,7 @@ func TestConfigFromAttributes(t *testing.T) {
 		},
 		{
 			name: "complete-case-2",
-			attrs: topologyv1alpha2.AttributeList{
+			attrs: topologyv1alpha1.AttributeList{
 				{
 					Name:  "topologyManagerScope",
 					Value: "pod",
@@ -195,7 +194,7 @@ func TestConfigFromAttributes(t *testing.T) {
 		},
 		{
 			name: "error-case-1",
-			attrs: topologyv1alpha2.AttributeList{
+			attrs: topologyv1alpha1.AttributeList{
 				{
 					Name:  "topologyManagerScope",
 					Value: "Pod",
@@ -211,7 +210,7 @@ func TestConfigFromAttributes(t *testing.T) {
 		},
 		{
 			name: "error-case-2",
-			attrs: topologyv1alpha2.AttributeList{
+			attrs: topologyv1alpha1.AttributeList{
 				{
 					Name:  "topologyManagerScope",
 					Value: "Container",
@@ -256,7 +255,7 @@ func TestConfigFromPolicies(t *testing.T) {
 		},
 		{
 			name:     "single-numa-pod",
-			policies: []string{string(topologyv1alpha2.SingleNUMANodePodLevel)},
+			policies: []string{string(topologyv1alpha1.SingleNUMANodePodLevel)},
 			expected: TopologyManagerConfig{
 				Policy: kubeletconfig.SingleNumaNodeTopologyManagerPolicy,
 				Scope:  kubeletconfig.PodTopologyManagerScope,
@@ -264,7 +263,7 @@ func TestConfigFromPolicies(t *testing.T) {
 		},
 		{
 			name:     "single-numa-container",
-			policies: []string{string(topologyv1alpha2.SingleNUMANodeContainerLevel)},
+			policies: []string{string(topologyv1alpha1.SingleNUMANodeContainerLevel)},
 			expected: TopologyManagerConfig{
 				Policy: kubeletconfig.SingleNumaNodeTopologyManagerPolicy,
 				Scope:  kubeletconfig.ContainerTopologyManagerScope,
@@ -272,7 +271,7 @@ func TestConfigFromPolicies(t *testing.T) {
 		},
 		{
 			name:     "restricted-container",
-			policies: []string{string(topologyv1alpha2.RestrictedContainerLevel)},
+			policies: []string{string(topologyv1alpha1.RestrictedContainerLevel)},
 			expected: TopologyManagerConfig{
 				Policy: kubeletconfig.RestrictedTopologyManagerPolicy,
 				Scope:  kubeletconfig.ContainerTopologyManagerScope,
@@ -281,8 +280,8 @@ func TestConfigFromPolicies(t *testing.T) {
 		{
 			name: "skip-policies",
 			policies: []string{
-				string(topologyv1alpha2.RestrictedContainerLevel),
-				string(topologyv1alpha2.SingleNUMANodePodLevel),
+				string(topologyv1alpha1.RestrictedContainerLevel),
+				string(topologyv1alpha1.SingleNUMANodePodLevel),
 			},
 			expected: TopologyManagerConfig{
 				Policy: kubeletconfig.RestrictedTopologyManagerPolicy,
@@ -310,19 +309,19 @@ func TestConfigFromPolicies(t *testing.T) {
 func TestConfigFromNRT(t *testing.T) {
 	tests := []struct {
 		name     string
-		nrt      topologyv1alpha2.NodeResourceTopology
+		nrt      topologyv1alpha1.NodeResourceTopology
 		expected TopologyManagerConfig
 	}{
 		{
 			name:     "nil",
-			nrt:      topologyv1alpha2.NodeResourceTopology{},
+			nrt:      topologyv1alpha1.NodeResourceTopology{},
 			expected: makeTopologyManagerConfigDefaults(),
 		},
 		{
 			name: "policies-single",
-			nrt: topologyv1alpha2.NodeResourceTopology{
+			nrt: topologyv1alpha1.NodeResourceTopology{
 				TopologyPolicies: []string{
-					string(topologyv1alpha2.BestEffortPodLevel),
+					string(topologyv1alpha1.BestEffortPodLevel),
 				},
 			},
 			expected: TopologyManagerConfig{
@@ -332,10 +331,10 @@ func TestConfigFromNRT(t *testing.T) {
 		},
 		{
 			name: "policies-ignore-after-first",
-			nrt: topologyv1alpha2.NodeResourceTopology{
+			nrt: topologyv1alpha1.NodeResourceTopology{
 				TopologyPolicies: []string{
-					string(topologyv1alpha2.RestrictedContainerLevel),
-					string(topologyv1alpha2.BestEffortPodLevel),
+					string(topologyv1alpha1.RestrictedContainerLevel),
+					string(topologyv1alpha1.BestEffortPodLevel),
 				},
 			},
 			expected: TopologyManagerConfig{
@@ -345,8 +344,8 @@ func TestConfigFromNRT(t *testing.T) {
 		},
 		{
 			name: "attributes-partial-policy-only",
-			nrt: topologyv1alpha2.NodeResourceTopology{
-				Attributes: topologyv1alpha2.AttributeList{
+			nrt: topologyv1alpha1.NodeResourceTopology{
+				Attributes: topologyv1alpha1.AttributeList{
 					{
 						Name:  "topologyManagerPolicy",
 						Value: "restricted",
@@ -360,11 +359,11 @@ func TestConfigFromNRT(t *testing.T) {
 		},
 		{
 			name: "attributes-overrides-policy-partial",
-			nrt: topologyv1alpha2.NodeResourceTopology{
+			nrt: topologyv1alpha1.NodeResourceTopology{
 				TopologyPolicies: []string{
-					string(topologyv1alpha2.BestEffortPodLevel),
+					string(topologyv1alpha1.BestEffortPodLevel),
 				},
-				Attributes: topologyv1alpha2.AttributeList{
+				Attributes: topologyv1alpha1.AttributeList{
 					{
 						Name:  "topologyManagerScope",
 						Value: "container",
@@ -378,11 +377,11 @@ func TestConfigFromNRT(t *testing.T) {
 		},
 		{
 			name: "attributes-overrides-policy-full",
-			nrt: topologyv1alpha2.NodeResourceTopology{
+			nrt: topologyv1alpha1.NodeResourceTopology{
 				TopologyPolicies: []string{
-					string(topologyv1alpha2.BestEffortPodLevel),
+					string(topologyv1alpha1.BestEffortPodLevel),
 				},
-				Attributes: topologyv1alpha2.AttributeList{
+				Attributes: topologyv1alpha1.AttributeList{
 					{
 						Name:  "topologyManagerScope",
 						Value: "container",

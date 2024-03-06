@@ -9,7 +9,7 @@ kind: ClusterRole
 metadata:
   name: noderesourcetoplogy-handler
 rules:
-- apiGroups: ["topology.node.k8s.io"]
+- apiGroups: ["topology.node.ppio.io"]
   resources: ["noderesourcetopologies"]
   verbs: ["get", "list", "watch"]
 - apiGroups: [""]

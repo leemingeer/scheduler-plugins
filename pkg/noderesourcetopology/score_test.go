@@ -18,10 +18,9 @@ package noderesourcetopology
 
 import (
 	"context"
+	topologyv1alpha1 "github.com/leemingeer/noderesourcetopology/pkg/apis/topology/v1alpha1"
 	"reflect"
 	"testing"
-
-	topologyv1alpha2 "github.com/k8stopologyawareschedwg/noderesourcetopology-api/pkg/apis/topology/v1alpha2"
 
 	v1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/resource"
@@ -41,28 +40,28 @@ const (
 
 type nodeToScoreMap map[string]int64
 
-func initTest(policy topologyv1alpha2.TopologyManagerPolicy, nodes ...*topologyv1alpha2.NodeResourceTopology) (map[string]*v1.Node, ctrlclient.Client) {
-	nodeTopologies := make([]*topologyv1alpha2.NodeResourceTopology, 3)
+func initTest(policy topologyv1alpha1.TopologyManagerPolicy, nodes ...*topologyv1alpha1.NodeResourceTopology) (map[string]*v1.Node, ctrlclient.Client) {
+	nodeTopologies := make([]*topologyv1alpha1.NodeResourceTopology, 3)
 	nodesMap := make(map[string]*v1.Node)
 
 	if len(nodes) == 0 {
 		// noderesourcetopology objects
-		nodeTopologies[0] = &topologyv1alpha2.NodeResourceTopology{
+		nodeTopologies[0] = &topologyv1alpha1.NodeResourceTopology{
 			ObjectMeta:       metav1.ObjectMeta{Name: "Node1"},
 			TopologyPolicies: []string{string(policy)},
-			Zones: topologyv1alpha2.ZoneList{
-				topologyv1alpha2.Zone{
+			Zones: topologyv1alpha1.ZoneList{
+				topologyv1alpha1.Zone{
 					Name: "node-0",
 					Type: "Node",
-					Resources: topologyv1alpha2.ResourceInfoList{
+					Resources: topologyv1alpha1.ResourceInfoList{
 						MakeTopologyResInfo(cpu, "4", "4"),
 						MakeTopologyResInfo(memory, "500Mi", "500Mi"),
 					},
 				},
-				topologyv1alpha2.Zone{
+				topologyv1alpha1.Zone{
 					Name: "node-1",
 					Type: "Node",
-					Resources: topologyv1alpha2.ResourceInfoList{
+					Resources: topologyv1alpha1.ResourceInfoList{
 						MakeTopologyResInfo(cpu, "4", "4"),
 						MakeTopologyResInfo(memory, "500Mi", "500Mi"),
 					},
@@ -70,42 +69,42 @@ func initTest(policy topologyv1alpha2.TopologyManagerPolicy, nodes ...*topologyv
 			},
 		}
 
-		nodeTopologies[1] = &topologyv1alpha2.NodeResourceTopology{
+		nodeTopologies[1] = &topologyv1alpha1.NodeResourceTopology{
 			ObjectMeta:       metav1.ObjectMeta{Name: "Node2"},
 			TopologyPolicies: []string{string(policy)},
-			Zones: topologyv1alpha2.ZoneList{
-				topologyv1alpha2.Zone{
+			Zones: topologyv1alpha1.ZoneList{
+				topologyv1alpha1.Zone{
 					Name: "node-0",
 					Type: "Node",
-					Resources: topologyv1alpha2.ResourceInfoList{
+					Resources: topologyv1alpha1.ResourceInfoList{
 						MakeTopologyResInfo(cpu, "2", "2"),
 						MakeTopologyResInfo(memory, "50Mi", "50Mi"),
 					},
-				}, topologyv1alpha2.Zone{
+				}, topologyv1alpha1.Zone{
 					Name: "node-1",
 					Type: "Node",
-					Resources: topologyv1alpha2.ResourceInfoList{
+					Resources: topologyv1alpha1.ResourceInfoList{
 						MakeTopologyResInfo(cpu, "2", "2"),
 						MakeTopologyResInfo(memory, "50Mi", "50Mi"),
 					},
 				},
 			},
 		}
-		nodeTopologies[2] = &topologyv1alpha2.NodeResourceTopology{
+		nodeTopologies[2] = &topologyv1alpha1.NodeResourceTopology{
 			ObjectMeta:       metav1.ObjectMeta{Name: "Node3"},
 			TopologyPolicies: []string{string(policy)},
-			Zones: topologyv1alpha2.ZoneList{
-				topologyv1alpha2.Zone{
+			Zones: topologyv1alpha1.ZoneList{
+				topologyv1alpha1.Zone{
 					Name: "node-0",
 					Type: "Node",
-					Resources: topologyv1alpha2.ResourceInfoList{
+					Resources: topologyv1alpha1.ResourceInfoList{
 						MakeTopologyResInfo(cpu, "6", "6"),
 						MakeTopologyResInfo(memory, "60Mi", "60Mi"),
 					},
-				}, topologyv1alpha2.Zone{
+				}, topologyv1alpha1.Zone{
 					Name: "node-1",
 					Type: "Node",
-					Resources: topologyv1alpha2.ResourceInfoList{
+					Resources: topologyv1alpha1.ResourceInfoList{
 						MakeTopologyResInfo(cpu, "6", "6"),
 						MakeTopologyResInfo(memory, "60Mi", "60Mi"),
 					},
@@ -204,7 +203,7 @@ func TestNodeResourceScorePlugin(t *testing.T) {
 	}
 
 	for _, test := range tests {
-		nodesMap, lister := initTest(topologyv1alpha2.SingleNUMANodeContainerLevel)
+		nodesMap, lister := initTest(topologyv1alpha1.SingleNUMANodeContainerLevel)
 		t.Run(test.name, func(t *testing.T) {
 			tm := &TopologyMatch{
 				scoreStrategyFunc: test.strategy,
@@ -254,8 +253,8 @@ func TestNodeResourceScorePluginLeastNUMA(t *testing.T) {
 		name        string
 		podRequests []v1.ResourceList
 		wantedRes   nodeToScoreMap
-		policy      topologyv1alpha2.TopologyManagerPolicy
-		nodes       []*topologyv1alpha2.NodeResourceTopology
+		policy      topologyv1alpha1.TopologyManagerPolicy
+		nodes       []*topologyv1alpha1.NodeResourceTopology
 	}{
 		{
 			name: "container scope, one container case 1",
@@ -270,7 +269,7 @@ func TestNodeResourceScorePluginLeastNUMA(t *testing.T) {
 				"Node2": 94,
 				"Node3": 94,
 			},
-			policy: topologyv1alpha2.BestEffortContainerLevel,
+			policy: topologyv1alpha1.BestEffortContainerLevel,
 		},
 		{
 			name: "container scope, one container case 2",
@@ -285,7 +284,7 @@ func TestNodeResourceScorePluginLeastNUMA(t *testing.T) {
 				"Node2": 82,
 				"Node3": 94,
 			},
-			policy: topologyv1alpha2.BestEffortContainerLevel,
+			policy: topologyv1alpha1.BestEffortContainerLevel,
 		},
 		{
 			name: "container scope, one container case 3",
@@ -300,7 +299,7 @@ func TestNodeResourceScorePluginLeastNUMA(t *testing.T) {
 				"Node2": 0,
 				"Node3": 94,
 			},
-			policy: topologyv1alpha2.BestEffortContainerLevel,
+			policy: topologyv1alpha1.BestEffortContainerLevel,
 		},
 		{
 			name: "container scope, two containers case 1",
@@ -319,7 +318,7 @@ func TestNodeResourceScorePluginLeastNUMA(t *testing.T) {
 				"Node2": 94,
 				"Node3": 94,
 			},
-			policy: topologyv1alpha2.BestEffortContainerLevel,
+			policy: topologyv1alpha1.BestEffortContainerLevel,
 		},
 		{
 			name: "container scope, two containers case 2",
@@ -338,7 +337,7 @@ func TestNodeResourceScorePluginLeastNUMA(t *testing.T) {
 				"Node2": 82,
 				"Node3": 94,
 			},
-			policy: topologyv1alpha2.BestEffortContainerLevel,
+			policy: topologyv1alpha1.BestEffortContainerLevel,
 		},
 		{
 			name: "container scope, two containers case 3",
@@ -357,7 +356,7 @@ func TestNodeResourceScorePluginLeastNUMA(t *testing.T) {
 				"Node2": 0,
 				"Node3": 94,
 			},
-			policy: topologyv1alpha2.BestEffortContainerLevel,
+			policy: topologyv1alpha1.BestEffortContainerLevel,
 		},
 		{
 			name: "container scope, two containers non NUMA resource",
@@ -374,7 +373,7 @@ func TestNodeResourceScorePluginLeastNUMA(t *testing.T) {
 				"Node2": 100,
 				"Node3": 100,
 			},
-			policy: topologyv1alpha2.BestEffortContainerLevel,
+			policy: topologyv1alpha1.BestEffortContainerLevel,
 		},
 		{
 			name: "pod scope, two containers case 1",
@@ -393,7 +392,7 @@ func TestNodeResourceScorePluginLeastNUMA(t *testing.T) {
 				"Node2": 82,
 				"Node3": 82,
 			},
-			policy: topologyv1alpha2.BestEffortPodLevel,
+			policy: topologyv1alpha1.BestEffortPodLevel,
 		},
 		{
 			name: "pod scope, two containers case 2",
@@ -412,7 +411,7 @@ func TestNodeResourceScorePluginLeastNUMA(t *testing.T) {
 				"Node2": 82,
 				"Node3": 82,
 			},
-			policy: topologyv1alpha2.BestEffortPodLevel,
+			policy: topologyv1alpha1.BestEffortPodLevel,
 		},
 		{
 			name: "pod scope, two containers case 3",
@@ -431,7 +430,7 @@ func TestNodeResourceScorePluginLeastNUMA(t *testing.T) {
 				"Node2": 0,
 				"Node3": 82,
 			},
-			policy: topologyv1alpha2.BestEffortPodLevel,
+			policy: topologyv1alpha1.BestEffortPodLevel,
 		},
 		{
 			name: "pod scope, one containers non NUMA resource",
@@ -445,7 +444,7 @@ func TestNodeResourceScorePluginLeastNUMA(t *testing.T) {
 				"Node2": 100,
 				"Node3": 100,
 			},
-			policy: topologyv1alpha2.BestEffortPodLevel,
+			policy: topologyv1alpha1.BestEffortPodLevel,
 		},
 		{
 			name: "container scope, one container, 4 NUMA nodes, 1 gpu ",
@@ -460,7 +459,7 @@ func TestNodeResourceScorePluginLeastNUMA(t *testing.T) {
 				"Node1": 94,
 				"Node2": 94,
 			},
-			policy: topologyv1alpha2.BestEffortContainerLevel,
+			policy: topologyv1alpha1.BestEffortContainerLevel,
 			nodes:  fourNUMANodes(),
 		},
 		{
@@ -476,7 +475,7 @@ func TestNodeResourceScorePluginLeastNUMA(t *testing.T) {
 				"Node1": 82,
 				"Node2": 76,
 			},
-			policy: topologyv1alpha2.BestEffortContainerLevel,
+			policy: topologyv1alpha1.BestEffortContainerLevel,
 			nodes:  fourNUMANodes(),
 		},
 		{
@@ -496,7 +495,7 @@ func TestNodeResourceScorePluginLeastNUMA(t *testing.T) {
 				"Node1": 82,
 				"Node2": 76,
 			},
-			policy: topologyv1alpha2.BestEffortContainerLevel,
+			policy: topologyv1alpha1.BestEffortContainerLevel,
 			nodes:  fourNUMANodes(),
 		},
 	}
@@ -536,6 +535,100 @@ func TestNodeResourceScorePluginLeastNUMA(t *testing.T) {
 	}
 }
 
+func TestNodeResourceScorePluginAlignSocket(t *testing.T) {
+	testCases := []struct {
+		name        string
+		podRequests []v1.ResourceList
+		wantedRes   nodeToScoreMap
+		policy      topologyv1alpha1.TopologyManagerPolicy
+		nodes       []*topologyv1alpha1.NodeResourceTopology
+	}{
+		{
+			name: "pod scope, one containers case 1",
+			podRequests: []v1.ResourceList{
+				{
+					v1.ResourceCPU:    resource.MustParse("14"),
+					v1.ResourceMemory: resource.MustParse("20Mi"),
+					gpu:               resource.MustParse("2"),
+				},
+			},
+			wantedRes: nodeToScoreMap{
+				// socket0:
+				// cpu：14/（4*8）*100 = 43
+				// memory: 20/(4*50) * 100 = 10
+				// gpu: 2/2 *100 = 100
+				// score: (43*1 + 10 * 1 + 100 *1)/3 = 51
+				// socket1:
+				// cpu：14/（4*8）*100 = 43
+				// memory: 20/(4*50) * 100 = 10
+				// gpu: 2/2 *100 = 100
+				// score: (43*1 + 10 * 1 + 100 *1)/3 = 51
+				// min(51, 51) = 51
+				"Node1": 37,
+				// socket0:
+				// cpu：14/（4*8）*100 = 43
+				// memory: 20/(4*50) * 100 = 10
+				// gpu: 2/2 *100 = 100
+				// score: (43*1 + 10 * 1 + 100 *1)/3 = 51
+				// socket1:
+				// cpu：14/（4*8）*100 = 43
+				// memory: 20/(4*50) * 100 = 10
+				// gpu: 2/4 *100 = 150
+				// score: (43*1 + 10 * 1 + 50 *1)/3 = 34
+				// min(51, 34) = 34
+				"Node2": 30,
+				// socket0:
+				// cpu：14/（4*8）*100 = 43
+				// memory: 20/(4*50) * 100 = 10
+				// gpu: 2/4 *100 = 50
+				// score: (43*1 + 10 * 1 + 50 *1)/3 = 34
+				// socket1:
+				// cpu：14/（4*8）*100 = 43
+				// memory: 20/(4*50) * 100 = 10
+				// gpu: 2/4 *100 = 150
+				// score: (43*1 + 10 * 1 + 50 *1)/3 = 34
+				// min(34, 34) = 34
+				"Node3": 24,
+			},
+			policy: topologyv1alpha1.RestrictedPodLevel,
+			nodes:  sixSockets(),
+		},
+	}
+
+	for _, tc := range testCases {
+		t.Run(tc.name, func(t *testing.T) {
+			nodesMap, lister := initTest(tc.policy, tc.nodes...)
+
+			tm := &TopologyMatch{
+				scoreStrategyType: apiconfig.SocketAlignment,
+				scoreStrategyFunc: mostAllocatedScoreStrategy,
+				nrtCache:          nrtcache.NewPassthrough(lister),
+			}
+			nodeToScore := make(nodeToScoreMap, len(nodesMap))
+			pod := makePodByResourceLists(tc.podRequests...)
+			for _, node := range nodesMap {
+				score, gotStatus := tm.Score(
+					context.Background(),
+					framework.NewCycleState(),
+					pod,
+					node.Name)
+
+				t.Logf("%v; %v; %v; score: %v; status: %v\n",
+					tc.name,
+					pod.GetName(),
+					node.Name,
+					score,
+					gotStatus)
+
+				nodeToScore[node.Name] = score
+			}
+			if !reflect.DeepEqual(nodeToScore, tc.wantedRes) {
+				t.Errorf("scores for nodes are incorrect wanted: %v, got: %v", tc.wantedRes, nodeToScore)
+			}
+		})
+	}
+}
+
 // return the name of the node with the highest score
 func findMaxScoreNode(nodeToScore nodeToScoreMap) string {
 	max := int64(0)
@@ -550,21 +643,21 @@ func findMaxScoreNode(nodeToScore nodeToScoreMap) string {
 	return electedNode
 }
 
-func fourNUMANodes() []*topologyv1alpha2.NodeResourceTopology {
-	return []*topologyv1alpha2.NodeResourceTopology{
+func fourNUMANodes() []*topologyv1alpha1.NodeResourceTopology {
+	return []*topologyv1alpha1.NodeResourceTopology{
 		{
 			ObjectMeta:       metav1.ObjectMeta{Name: "Node1"},
-			TopologyPolicies: []string{string(topologyv1alpha2.BestEffortContainerLevel)},
-			Zones: topologyv1alpha2.ZoneList{
+			TopologyPolicies: []string{string(topologyv1alpha1.BestEffortContainerLevel)},
+			Zones: topologyv1alpha1.ZoneList{
 				{
 					Name: "node-0",
 					Type: "Node",
-					Resources: topologyv1alpha2.ResourceInfoList{
+					Resources: topologyv1alpha1.ResourceInfoList{
 						MakeTopologyResInfo(cpu, "2", "2"),
 						MakeTopologyResInfo(memory, "50Mi", "50Mi"),
 						MakeTopologyResInfo(gpu, "1", "1"),
 					},
-					Costs: topologyv1alpha2.CostList{
+					Costs: topologyv1alpha1.CostList{
 						{
 							Name:  "node-0",
 							Value: 10,
@@ -586,12 +679,12 @@ func fourNUMANodes() []*topologyv1alpha2.NodeResourceTopology {
 				{
 					Name: "node-1",
 					Type: "Node",
-					Resources: topologyv1alpha2.ResourceInfoList{
+					Resources: topologyv1alpha1.ResourceInfoList{
 						MakeTopologyResInfo(cpu, "2", "2"),
 						MakeTopologyResInfo(memory, "50Mi", "50Mi"),
 						MakeTopologyResInfo(gpu, "1", "1"),
 					},
-					Costs: topologyv1alpha2.CostList{
+					Costs: topologyv1alpha1.CostList{
 						{
 							Name:  "node-0",
 							Value: 12,
@@ -613,12 +706,12 @@ func fourNUMANodes() []*topologyv1alpha2.NodeResourceTopology {
 				{
 					Name: "node-2",
 					Type: "Node",
-					Resources: topologyv1alpha2.ResourceInfoList{
+					Resources: topologyv1alpha1.ResourceInfoList{
 						MakeTopologyResInfo(cpu, "2", "2"),
 						MakeTopologyResInfo(memory, "50Mi", "50Mi"),
 						MakeTopologyResInfo(gpu, "0", "0"),
 					},
-					Costs: topologyv1alpha2.CostList{
+					Costs: topologyv1alpha1.CostList{
 						{
 							Name:  "node-0",
 							Value: 20,
@@ -640,12 +733,12 @@ func fourNUMANodes() []*topologyv1alpha2.NodeResourceTopology {
 				{
 					Name: "node-3",
 					Type: "Node",
-					Resources: topologyv1alpha2.ResourceInfoList{
+					Resources: topologyv1alpha1.ResourceInfoList{
 						MakeTopologyResInfo(cpu, "2", "2"),
 						MakeTopologyResInfo(memory, "50Mi", "50Mi"),
 						MakeTopologyResInfo(gpu, "0", "0"),
 					},
-					Costs: topologyv1alpha2.CostList{
+					Costs: topologyv1alpha1.CostList{
 						{
 							Name:  "node-0",
 							Value: 20,
@@ -668,17 +761,17 @@ func fourNUMANodes() []*topologyv1alpha2.NodeResourceTopology {
 		},
 		{
 			ObjectMeta:       metav1.ObjectMeta{Name: "Node2"},
-			TopologyPolicies: []string{string(topologyv1alpha2.BestEffortContainerLevel)},
-			Zones: topologyv1alpha2.ZoneList{
+			TopologyPolicies: []string{string(topologyv1alpha1.BestEffortContainerLevel)},
+			Zones: topologyv1alpha1.ZoneList{
 				{
 					Name: "node-0",
 					Type: "Node",
-					Resources: topologyv1alpha2.ResourceInfoList{
+					Resources: topologyv1alpha1.ResourceInfoList{
 						MakeTopologyResInfo(cpu, "2", "2"),
 						MakeTopologyResInfo(memory, "50Mi", "50Mi"),
 						MakeTopologyResInfo(gpu, "1", "1"),
 					},
-					Costs: topologyv1alpha2.CostList{
+					Costs: topologyv1alpha1.CostList{
 						{
 							Name:  "node-0",
 							Value: 10,
@@ -700,12 +793,12 @@ func fourNUMANodes() []*topologyv1alpha2.NodeResourceTopology {
 				{
 					Name: "node-1",
 					Type: "Node",
-					Resources: topologyv1alpha2.ResourceInfoList{
+					Resources: topologyv1alpha1.ResourceInfoList{
 						MakeTopologyResInfo(cpu, "2", "2"),
 						MakeTopologyResInfo(memory, "50Mi", "50Mi"),
 						MakeTopologyResInfo(gpu, "0", "0"),
 					},
-					Costs: topologyv1alpha2.CostList{
+					Costs: topologyv1alpha1.CostList{
 						{
 							Name:  "node-0",
 							Value: 12,
@@ -727,12 +820,12 @@ func fourNUMANodes() []*topologyv1alpha2.NodeResourceTopology {
 				{
 					Name: "node-2",
 					Type: "Node",
-					Resources: topologyv1alpha2.ResourceInfoList{
+					Resources: topologyv1alpha1.ResourceInfoList{
 						MakeTopologyResInfo(cpu, "2", "2"),
 						MakeTopologyResInfo(memory, "50Mi", "50Mi"),
 						MakeTopologyResInfo(gpu, "1", "1"),
 					},
-					Costs: topologyv1alpha2.CostList{
+					Costs: topologyv1alpha1.CostList{
 						{
 							Name:  "node-0",
 							Value: 20,
@@ -754,12 +847,12 @@ func fourNUMANodes() []*topologyv1alpha2.NodeResourceTopology {
 				{
 					Name: "node-3",
 					Type: "Node",
-					Resources: topologyv1alpha2.ResourceInfoList{
+					Resources: topologyv1alpha1.ResourceInfoList{
 						MakeTopologyResInfo(cpu, "2", "2"),
 						MakeTopologyResInfo(memory, "50Mi", "50Mi"),
 						MakeTopologyResInfo(gpu, "0", "0"),
 					},
-					Costs: topologyv1alpha2.CostList{
+					Costs: topologyv1alpha1.CostList{
 						{
 							Name:  "node-0",
 							Value: 20,
@@ -774,6 +867,1061 @@ func fourNUMANodes() []*topologyv1alpha2.NodeResourceTopology {
 						},
 						{
 							Name:  "node-3",
+							Value: 10,
+						},
+					},
+				},
+			},
+		},
+	}
+}
+
+func sixSockets() []*topologyv1alpha1.NodeResourceTopology {
+	return []*topologyv1alpha1.NodeResourceTopology{
+		{
+			ObjectMeta:       metav1.ObjectMeta{Name: "Node1"},
+			TopologyPolicies: []string{string(topologyv1alpha1.RestrictedPodLevel)},
+			Zones: topologyv1alpha1.ZoneList{
+				{
+					Name: "node-0",
+					Type: "Node",
+					Resources: topologyv1alpha1.ResourceInfoList{
+						MakeTopologyResInfo(cpu, "8", "8"),
+						MakeTopologyResInfo(memory, "50Mi", "50Mi"),
+						MakeTopologyResInfo(gpu, "1", "0"),
+					},
+					Costs: topologyv1alpha1.CostList{
+						{
+							Name:  "node-0",
+							Value: 10,
+						},
+						{
+							Name:  "node-1",
+							Value: 12,
+						},
+						{
+							Name:  "node-2",
+							Value: 12,
+						},
+						{
+							Name:  "node-3",
+							Value: 12,
+						},
+						{
+							Name:  "node-4",
+							Value: 32,
+						},
+						{
+							Name:  "node-5",
+							Value: 32,
+						},
+						{
+							Name:  "node-6",
+							Value: 32,
+						},
+						{
+							Name:  "node-7",
+							Value: 32,
+						},
+					},
+				},
+				{
+					Name: "node-1",
+					Type: "Node",
+					Resources: topologyv1alpha1.ResourceInfoList{
+						MakeTopologyResInfo(cpu, "8", "8"),
+						MakeTopologyResInfo(memory, "50Mi", "50Mi"),
+						MakeTopologyResInfo(gpu, "1", "0"),
+					},
+					Costs: topologyv1alpha1.CostList{
+						{
+							Name:  "node-0",
+							Value: 12,
+						},
+						{
+							Name:  "node-1",
+							Value: 10,
+						},
+						{
+							Name:  "node-2",
+							Value: 12,
+						},
+						{
+							Name:  "node-3",
+							Value: 12,
+						},
+						{
+							Name:  "node-4",
+							Value: 32,
+						},
+						{
+							Name:  "node-5",
+							Value: 32,
+						},
+						{
+							Name:  "node-6",
+							Value: 32,
+						},
+						{
+							Name:  "node-7",
+							Value: 32,
+						},
+					},
+				},
+				{
+					Name: "node-2",
+					Type: "Node",
+					Resources: topologyv1alpha1.ResourceInfoList{
+						MakeTopologyResInfo(cpu, "8", "8"),
+						MakeTopologyResInfo(memory, "50Mi", "50Mi"),
+						MakeTopologyResInfo(gpu, "1", "1"),
+					},
+					Costs: topologyv1alpha1.CostList{
+						{
+							Name:  "node-0",
+							Value: 12,
+						},
+						{
+							Name:  "node-1",
+							Value: 12,
+						},
+						{
+							Name:  "node-2",
+							Value: 10,
+						},
+						{
+							Name:  "node-3",
+							Value: 12,
+						},
+						{
+							Name:  "node-4",
+							Value: 32,
+						},
+						{
+							Name:  "node-5",
+							Value: 32,
+						},
+						{
+							Name:  "node-6",
+							Value: 32,
+						},
+						{
+							Name:  "node-7",
+							Value: 32,
+						},
+					},
+				},
+				{
+					Name: "node-3",
+					Type: "Node",
+					Resources: topologyv1alpha1.ResourceInfoList{
+						MakeTopologyResInfo(cpu, "8", "8"),
+						MakeTopologyResInfo(memory, "50Mi", "50Mi"),
+						MakeTopologyResInfo(gpu, "1", "1"),
+					},
+					Costs: topologyv1alpha1.CostList{
+						{
+							Name:  "node-0",
+							Value: 12,
+						},
+						{
+							Name:  "node-1",
+							Value: 12,
+						},
+						{
+							Name:  "node-2",
+							Value: 12,
+						},
+						{
+							Name:  "node-3",
+							Value: 10,
+						},
+						{
+							Name:  "node-4",
+							Value: 32,
+						},
+						{
+							Name:  "node-5",
+							Value: 32,
+						},
+						{
+							Name:  "node-6",
+							Value: 32,
+						},
+						{
+							Name:  "node-7",
+							Value: 32,
+						},
+					},
+				},
+				{
+					Name: "node-4",
+					Type: "Node",
+					Resources: topologyv1alpha1.ResourceInfoList{
+						MakeTopologyResInfo(cpu, "8", "8"),
+						MakeTopologyResInfo(memory, "50Mi", "50Mi"),
+						MakeTopologyResInfo(gpu, "1", "1"),
+					},
+					Costs: topologyv1alpha1.CostList{
+						{
+							Name:  "node-0",
+							Value: 32,
+						},
+						{
+							Name:  "node-1",
+							Value: 32,
+						},
+						{
+							Name:  "node-2",
+							Value: 32,
+						},
+						{
+							Name:  "node-3",
+							Value: 32,
+						},
+						{
+							Name:  "node-4",
+							Value: 10,
+						},
+						{
+							Name:  "node-5",
+							Value: 12,
+						},
+						{
+							Name:  "node-6",
+							Value: 12,
+						},
+						{
+							Name:  "node-7",
+							Value: 12,
+						},
+					},
+				},
+				{
+					Name: "node-5",
+					Type: "Node",
+					Resources: topologyv1alpha1.ResourceInfoList{
+						MakeTopologyResInfo(cpu, "8", "8"),
+						MakeTopologyResInfo(memory, "50Mi", "50Mi"),
+						MakeTopologyResInfo(gpu, "1", "0"),
+					},
+					Costs: topologyv1alpha1.CostList{
+						{
+							Name:  "node-0",
+							Value: 32,
+						},
+						{
+							Name:  "node-1",
+							Value: 32,
+						},
+						{
+							Name:  "node-2",
+							Value: 32,
+						},
+						{
+							Name:  "node-3",
+							Value: 32,
+						},
+						{
+							Name:  "node-4",
+							Value: 12,
+						},
+						{
+							Name:  "node-5",
+							Value: 10,
+						},
+						{
+							Name:  "node-6",
+							Value: 12,
+						},
+						{
+							Name:  "node-7",
+							Value: 12,
+						},
+					},
+				},
+				{
+					Name: "node-6",
+					Type: "Node",
+					Resources: topologyv1alpha1.ResourceInfoList{
+						MakeTopologyResInfo(cpu, "8", "8"),
+						MakeTopologyResInfo(memory, "50Mi", "50Mi"),
+						MakeTopologyResInfo(gpu, "1", "0"),
+					},
+					Costs: topologyv1alpha1.CostList{
+						{
+							Name:  "node-0",
+							Value: 32,
+						},
+						{
+							Name:  "node-1",
+							Value: 32,
+						},
+						{
+							Name:  "node-2",
+							Value: 32,
+						},
+						{
+							Name:  "node-3",
+							Value: 32,
+						},
+						{
+							Name:  "node-4",
+							Value: 12,
+						},
+						{
+							Name:  "node-5",
+							Value: 12,
+						},
+						{
+							Name:  "node-6",
+							Value: 10,
+						},
+						{
+							Name:  "node-7",
+							Value: 12,
+						},
+					},
+				},
+				{
+					Name: "node-7",
+					Type: "Node",
+					Resources: topologyv1alpha1.ResourceInfoList{
+						MakeTopologyResInfo(cpu, "8", "8"),
+						MakeTopologyResInfo(memory, "50Mi", "50Mi"),
+						MakeTopologyResInfo(gpu, "1", "1"),
+					},
+					Costs: topologyv1alpha1.CostList{
+						{
+							Name:  "node-0",
+							Value: 32,
+						},
+						{
+							Name:  "node-1",
+							Value: 32,
+						},
+						{
+							Name:  "node-2",
+							Value: 32,
+						},
+						{
+							Name:  "node-3",
+							Value: 32,
+						},
+						{
+							Name:  "node-4",
+							Value: 12,
+						},
+						{
+							Name:  "node-5",
+							Value: 12,
+						},
+						{
+							Name:  "node-6",
+							Value: 12,
+						},
+						{
+							Name:  "node-7",
+							Value: 10,
+						},
+					},
+				},
+			},
+		},
+		{
+			ObjectMeta:       metav1.ObjectMeta{Name: "Node2"},
+			TopologyPolicies: []string{string(topologyv1alpha1.RestrictedPodLevel)},
+			Zones: topologyv1alpha1.ZoneList{
+				{
+					Name: "node-0",
+					Type: "Node",
+					Resources: topologyv1alpha1.ResourceInfoList{
+						MakeTopologyResInfo(cpu, "8", "8"),
+						MakeTopologyResInfo(memory, "50Mi", "50Mi"),
+						MakeTopologyResInfo(gpu, "1", "1"),
+					},
+					Costs: topologyv1alpha1.CostList{
+						{
+							Name:  "node-0",
+							Value: 10,
+						},
+						{
+							Name:  "node-1",
+							Value: 12,
+						},
+						{
+							Name:  "node-2",
+							Value: 12,
+						},
+						{
+							Name:  "node-3",
+							Value: 12,
+						},
+						{
+							Name:  "node-4",
+							Value: 32,
+						},
+						{
+							Name:  "node-5",
+							Value: 32,
+						},
+						{
+							Name:  "node-6",
+							Value: 32,
+						},
+						{
+							Name:  "node-7",
+							Value: 32,
+						},
+					},
+				},
+				{
+					Name: "node-1",
+					Type: "Node",
+					Resources: topologyv1alpha1.ResourceInfoList{
+						MakeTopologyResInfo(cpu, "8", "8"),
+						MakeTopologyResInfo(memory, "50Mi", "50Mi"),
+						MakeTopologyResInfo(gpu, "1", "0"),
+					},
+					Costs: topologyv1alpha1.CostList{
+						{
+							Name:  "node-0",
+							Value: 12,
+						},
+						{
+							Name:  "node-1",
+							Value: 10,
+						},
+						{
+							Name:  "node-2",
+							Value: 12,
+						},
+						{
+							Name:  "node-3",
+							Value: 12,
+						},
+						{
+							Name:  "node-4",
+							Value: 32,
+						},
+						{
+							Name:  "node-5",
+							Value: 32,
+						},
+						{
+							Name:  "node-6",
+							Value: 32,
+						},
+						{
+							Name:  "node-7",
+							Value: 32,
+						},
+					},
+				},
+				{
+					Name: "node-2",
+					Type: "Node",
+					Resources: topologyv1alpha1.ResourceInfoList{
+						MakeTopologyResInfo(cpu, "8", "8"),
+						MakeTopologyResInfo(memory, "50Mi", "50Mi"),
+						MakeTopologyResInfo(gpu, "1", "0"),
+					},
+					Costs: topologyv1alpha1.CostList{
+						{
+							Name:  "node-0",
+							Value: 12,
+						},
+						{
+							Name:  "node-1",
+							Value: 12,
+						},
+						{
+							Name:  "node-2",
+							Value: 10,
+						},
+						{
+							Name:  "node-3",
+							Value: 12,
+						},
+						{
+							Name:  "node-4",
+							Value: 32,
+						},
+						{
+							Name:  "node-5",
+							Value: 32,
+						},
+						{
+							Name:  "node-6",
+							Value: 32,
+						},
+						{
+							Name:  "node-7",
+							Value: 32,
+						},
+					},
+				},
+				{
+					Name: "node-3",
+					Type: "Node",
+					Resources: topologyv1alpha1.ResourceInfoList{
+						MakeTopologyResInfo(cpu, "8", "8"),
+						MakeTopologyResInfo(memory, "50Mi", "50Mi"),
+						MakeTopologyResInfo(gpu, "1", "1"),
+					},
+					Costs: topologyv1alpha1.CostList{
+						{
+							Name:  "node-0",
+							Value: 12,
+						},
+						{
+							Name:  "node-1",
+							Value: 12,
+						},
+						{
+							Name:  "node-2",
+							Value: 12,
+						},
+						{
+							Name:  "node-3",
+							Value: 10,
+						},
+						{
+							Name:  "node-4",
+							Value: 32,
+						},
+						{
+							Name:  "node-5",
+							Value: 32,
+						},
+						{
+							Name:  "node-6",
+							Value: 32,
+						},
+						{
+							Name:  "node-7",
+							Value: 32,
+						},
+					},
+				},
+				{
+					Name: "node-4",
+					Type: "Node",
+					Resources: topologyv1alpha1.ResourceInfoList{
+						MakeTopologyResInfo(cpu, "8", "8"),
+						MakeTopologyResInfo(memory, "50Mi", "50Mi"),
+						MakeTopologyResInfo(gpu, "1", "1"),
+					},
+					Costs: topologyv1alpha1.CostList{
+						{
+							Name:  "node-0",
+							Value: 32,
+						},
+						{
+							Name:  "node-1",
+							Value: 32,
+						},
+						{
+							Name:  "node-2",
+							Value: 32,
+						},
+						{
+							Name:  "node-3",
+							Value: 32,
+						},
+						{
+							Name:  "node-4",
+							Value: 10,
+						},
+						{
+							Name:  "node-5",
+							Value: 12,
+						},
+						{
+							Name:  "node-6",
+							Value: 12,
+						},
+						{
+							Name:  "node-7",
+							Value: 12,
+						},
+					},
+				},
+				{
+					Name: "node-5",
+					Type: "Node",
+					Resources: topologyv1alpha1.ResourceInfoList{
+						MakeTopologyResInfo(cpu, "8", "8"),
+						MakeTopologyResInfo(memory, "50Mi", "50Mi"),
+						MakeTopologyResInfo(gpu, "1", "1"),
+					},
+					Costs: topologyv1alpha1.CostList{
+						{
+							Name:  "node-0",
+							Value: 32,
+						},
+						{
+							Name:  "node-1",
+							Value: 32,
+						},
+						{
+							Name:  "node-2",
+							Value: 32,
+						},
+						{
+							Name:  "node-3",
+							Value: 32,
+						},
+						{
+							Name:  "node-4",
+							Value: 12,
+						},
+						{
+							Name:  "node-5",
+							Value: 10,
+						},
+						{
+							Name:  "node-6",
+							Value: 12,
+						},
+						{
+							Name:  "node-7",
+							Value: 12,
+						},
+					},
+				},
+				{
+					Name: "node-6",
+					Type: "Node",
+					Resources: topologyv1alpha1.ResourceInfoList{
+						MakeTopologyResInfo(cpu, "8", "8"),
+						MakeTopologyResInfo(memory, "50Mi", "50Mi"),
+						MakeTopologyResInfo(gpu, "1", "1"),
+					},
+					Costs: topologyv1alpha1.CostList{
+						{
+							Name:  "node-0",
+							Value: 32,
+						},
+						{
+							Name:  "node-1",
+							Value: 32,
+						},
+						{
+							Name:  "node-2",
+							Value: 32,
+						},
+						{
+							Name:  "node-3",
+							Value: 32,
+						},
+						{
+							Name:  "node-4",
+							Value: 12,
+						},
+						{
+							Name:  "node-5",
+							Value: 12,
+						},
+						{
+							Name:  "node-6",
+							Value: 10,
+						},
+						{
+							Name:  "node-7",
+							Value: 12,
+						},
+					},
+				},
+				{
+					Name: "node-7",
+					Type: "Node",
+					Resources: topologyv1alpha1.ResourceInfoList{
+						MakeTopologyResInfo(cpu, "8", "8"),
+						MakeTopologyResInfo(memory, "50Mi", "50Mi"),
+						MakeTopologyResInfo(gpu, "1", "1"),
+					},
+					Costs: topologyv1alpha1.CostList{
+						{
+							Name:  "node-0",
+							Value: 32,
+						},
+						{
+							Name:  "node-1",
+							Value: 32,
+						},
+						{
+							Name:  "node-2",
+							Value: 32,
+						},
+						{
+							Name:  "node-3",
+							Value: 32,
+						},
+						{
+							Name:  "node-4",
+							Value: 12,
+						},
+						{
+							Name:  "node-5",
+							Value: 12,
+						},
+						{
+							Name:  "node-6",
+							Value: 12,
+						},
+						{
+							Name:  "node-7",
+							Value: 10,
+						},
+					},
+				},
+			},
+		},
+		{
+			ObjectMeta:       metav1.ObjectMeta{Name: "Node3"},
+			TopologyPolicies: []string{string(topologyv1alpha1.RestrictedPodLevel)},
+			Zones: topologyv1alpha1.ZoneList{
+				{
+					Name: "node-0",
+					Type: "Node",
+					Resources: topologyv1alpha1.ResourceInfoList{
+						MakeTopologyResInfo(cpu, "8", "8"),
+						MakeTopologyResInfo(memory, "50Mi", "50Mi"),
+						MakeTopologyResInfo(gpu, "1", "1"),
+					},
+					Costs: topologyv1alpha1.CostList{
+						{
+							Name:  "node-0",
+							Value: 10,
+						},
+						{
+							Name:  "node-1",
+							Value: 12,
+						},
+						{
+							Name:  "node-2",
+							Value: 12,
+						},
+						{
+							Name:  "node-3",
+							Value: 12,
+						},
+						{
+							Name:  "node-4",
+							Value: 32,
+						},
+						{
+							Name:  "node-5",
+							Value: 32,
+						},
+						{
+							Name:  "node-6",
+							Value: 32,
+						},
+						{
+							Name:  "node-7",
+							Value: 32,
+						},
+					},
+				},
+				{
+					Name: "node-1",
+					Type: "Node",
+					Resources: topologyv1alpha1.ResourceInfoList{
+						MakeTopologyResInfo(cpu, "8", "8"),
+						MakeTopologyResInfo(memory, "50Mi", "50Mi"),
+						MakeTopologyResInfo(gpu, "1", "1"),
+					},
+					Costs: topologyv1alpha1.CostList{
+						{
+							Name:  "node-0",
+							Value: 12,
+						},
+						{
+							Name:  "node-1",
+							Value: 10,
+						},
+						{
+							Name:  "node-2",
+							Value: 12,
+						},
+						{
+							Name:  "node-3",
+							Value: 12,
+						},
+						{
+							Name:  "node-4",
+							Value: 32,
+						},
+						{
+							Name:  "node-5",
+							Value: 32,
+						},
+						{
+							Name:  "node-6",
+							Value: 32,
+						},
+						{
+							Name:  "node-7",
+							Value: 32,
+						},
+					},
+				},
+				{
+					Name: "node-2",
+					Type: "Node",
+					Resources: topologyv1alpha1.ResourceInfoList{
+						MakeTopologyResInfo(cpu, "8", "8"),
+						MakeTopologyResInfo(memory, "50Mi", "50Mi"),
+						MakeTopologyResInfo(gpu, "1", "1"),
+					},
+					Costs: topologyv1alpha1.CostList{
+						{
+							Name:  "node-0",
+							Value: 12,
+						},
+						{
+							Name:  "node-1",
+							Value: 12,
+						},
+						{
+							Name:  "node-2",
+							Value: 10,
+						},
+						{
+							Name:  "node-3",
+							Value: 12,
+						},
+						{
+							Name:  "node-4",
+							Value: 32,
+						},
+						{
+							Name:  "node-5",
+							Value: 32,
+						},
+						{
+							Name:  "node-6",
+							Value: 32,
+						},
+						{
+							Name:  "node-7",
+							Value: 32,
+						},
+					},
+				},
+				{
+					Name: "node-3",
+					Type: "Node",
+					Resources: topologyv1alpha1.ResourceInfoList{
+						MakeTopologyResInfo(cpu, "8", "8"),
+						MakeTopologyResInfo(memory, "50Mi", "50Mi"),
+						MakeTopologyResInfo(gpu, "1", "1"),
+					},
+					Costs: topologyv1alpha1.CostList{
+						{
+							Name:  "node-0",
+							Value: 12,
+						},
+						{
+							Name:  "node-1",
+							Value: 12,
+						},
+						{
+							Name:  "node-2",
+							Value: 12,
+						},
+						{
+							Name:  "node-3",
+							Value: 10,
+						},
+						{
+							Name:  "node-4",
+							Value: 32,
+						},
+						{
+							Name:  "node-5",
+							Value: 32,
+						},
+						{
+							Name:  "node-6",
+							Value: 32,
+						},
+						{
+							Name:  "node-7",
+							Value: 32,
+						},
+					},
+				},
+				{
+					Name: "node-4",
+					Type: "Node",
+					Resources: topologyv1alpha1.ResourceInfoList{
+						MakeTopologyResInfo(cpu, "8", "8"),
+						MakeTopologyResInfo(memory, "50Mi", "50Mi"),
+						MakeTopologyResInfo(gpu, "1", "1"),
+					},
+					Costs: topologyv1alpha1.CostList{
+						{
+							Name:  "node-0",
+							Value: 32,
+						},
+						{
+							Name:  "node-1",
+							Value: 32,
+						},
+						{
+							Name:  "node-2",
+							Value: 32,
+						},
+						{
+							Name:  "node-3",
+							Value: 32,
+						},
+						{
+							Name:  "node-4",
+							Value: 10,
+						},
+						{
+							Name:  "node-5",
+							Value: 12,
+						},
+						{
+							Name:  "node-6",
+							Value: 12,
+						},
+						{
+							Name:  "node-7",
+							Value: 12,
+						},
+					},
+				},
+				{
+					Name: "node-5",
+					Type: "Node",
+					Resources: topologyv1alpha1.ResourceInfoList{
+						MakeTopologyResInfo(cpu, "8", "8"),
+						MakeTopologyResInfo(memory, "50Mi", "50Mi"),
+						MakeTopologyResInfo(gpu, "1", "1"),
+					},
+					Costs: topologyv1alpha1.CostList{
+						{
+							Name:  "node-0",
+							Value: 32,
+						},
+						{
+							Name:  "node-1",
+							Value: 32,
+						},
+						{
+							Name:  "node-2",
+							Value: 32,
+						},
+						{
+							Name:  "node-3",
+							Value: 32,
+						},
+						{
+							Name:  "node-4",
+							Value: 12,
+						},
+						{
+							Name:  "node-5",
+							Value: 10,
+						},
+						{
+							Name:  "node-6",
+							Value: 12,
+						},
+						{
+							Name:  "node-7",
+							Value: 12,
+						},
+					},
+				},
+				{
+					Name: "node-6",
+					Type: "Node",
+					Resources: topologyv1alpha1.ResourceInfoList{
+						MakeTopologyResInfo(cpu, "8", "8"),
+						MakeTopologyResInfo(memory, "50Mi", "50Mi"),
+						MakeTopologyResInfo(gpu, "1", "1"),
+					},
+					Costs: topologyv1alpha1.CostList{
+						{
+							Name:  "node-0",
+							Value: 32,
+						},
+						{
+							Name:  "node-1",
+							Value: 32,
+						},
+						{
+							Name:  "node-2",
+							Value: 32,
+						},
+						{
+							Name:  "node-3",
+							Value: 32,
+						},
+						{
+							Name:  "node-4",
+							Value: 12,
+						},
+						{
+							Name:  "node-5",
+							Value: 12,
+						},
+						{
+							Name:  "node-6",
+							Value: 10,
+						},
+						{
+							Name:  "node-7",
+							Value: 12,
+						},
+					},
+				},
+				{
+					Name: "node-7",
+					Type: "Node",
+					Resources: topologyv1alpha1.ResourceInfoList{
+						MakeTopologyResInfo(cpu, "8", "8"),
+						MakeTopologyResInfo(memory, "50Mi", "50Mi"),
+						MakeTopologyResInfo(gpu, "1", "1"),
+					},
+					Costs: topologyv1alpha1.CostList{
+						{
+							Name:  "node-0",
+							Value: 32,
+						},
+						{
+							Name:  "node-1",
+							Value: 32,
+						},
+						{
+							Name:  "node-2",
+							Value: 32,
+						},
+						{
+							Name:  "node-3",
+							Value: 32,
+						},
+						{
+							Name:  "node-4",
+							Value: 12,
+						},
+						{
+							Name:  "node-5",
+							Value: 12,
+						},
+						{
+							Name:  "node-6",
+							Value: 12,
+						},
+						{
+							Name:  "node-7",
 							Value: 10,
 						},
 					},

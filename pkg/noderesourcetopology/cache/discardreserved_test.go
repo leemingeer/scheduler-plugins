@@ -18,9 +18,8 @@ package cache
 
 import (
 	"context"
+	topologyv1alpha1 "github.com/leemingeer/noderesourcetopology/pkg/apis/topology/v1alpha1"
 	"testing"
-
-	topologyv1alpha2 "github.com/k8stopologyawareschedwg/noderesourcetopology-api/pkg/apis/topology/v1alpha2"
 
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -37,21 +36,21 @@ func TestDiscardReservedNodesGetNRTCopy(t *testing.T) {
 
 	ctx := context.Background()
 	nrtCache := NewDiscardReserved(fakeClient)
-	var nrtObj *topologyv1alpha2.NodeResourceTopology
+	var nrtObj *topologyv1alpha1.NodeResourceTopology
 	nrtObj, _ = nrtCache.GetCachedNRTCopy(ctx, "node1", &corev1.Pod{})
 	if nrtObj != nil {
 		t.Fatalf("non-empty object from empty cache")
 	}
 
-	nodeTopologies := []*topologyv1alpha2.NodeResourceTopology{
+	nodeTopologies := []*topologyv1alpha1.NodeResourceTopology{
 		{
 			ObjectMeta:       metav1.ObjectMeta{Name: "node1"},
-			TopologyPolicies: []string{string(topologyv1alpha2.SingleNUMANodeContainerLevel)},
-			Zones: topologyv1alpha2.ZoneList{
+			TopologyPolicies: []string{string(topologyv1alpha1.SingleNUMANodeContainerLevel)},
+			Zones: topologyv1alpha1.ZoneList{
 				{
 					Name: "node-0",
 					Type: "Node",
-					Resources: topologyv1alpha2.ResourceInfoList{
+					Resources: topologyv1alpha1.ResourceInfoList{
 						MakeTopologyResInfo(cpu, "20", "4"),
 						MakeTopologyResInfo(memory, "8Gi", "8Gi"),
 						MakeTopologyResInfo(nicResourceName, "30", "10"),
@@ -60,7 +59,7 @@ func TestDiscardReservedNodesGetNRTCopy(t *testing.T) {
 				{
 					Name: "node-1",
 					Type: "Node",
-					Resources: topologyv1alpha2.ResourceInfoList{
+					Resources: topologyv1alpha1.ResourceInfoList{
 						MakeTopologyResInfo(cpu, "30", "8"),
 						MakeTopologyResInfo(memory, "8Gi", "8Gi"),
 						MakeTopologyResInfo(nicResourceName, "30", "10"),

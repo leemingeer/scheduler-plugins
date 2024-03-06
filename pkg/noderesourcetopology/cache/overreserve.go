@@ -20,12 +20,11 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	topologyv1alpha1 "github.com/leemingeer/noderesourcetopology/pkg/apis/topology/v1alpha1"
 	"sync"
 	"time"
 
-	topologyv1alpha2 "github.com/k8stopologyawareschedwg/noderesourcetopology-api/pkg/apis/topology/v1alpha2"
 	"github.com/k8stopologyawareschedwg/podfingerprint"
-
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/types"
 	podlisterv1 "k8s.io/client-go/listers/core/v1"
@@ -59,7 +58,7 @@ func NewOverReserve(cfg *apiconfig.NodeResourceTopologyCache, client ctrlclient.
 
 	resyncMethod := getCacheResyncMethod(cfg)
 
-	nrtObjs := &topologyv1alpha2.NodeResourceTopologyList{}
+	nrtObjs := &topologyv1alpha1.NodeResourceTopologyList{}
 	// TODO: we should pass-in a context in the future
 	if err := client.List(context.Background(), nrtObjs); err != nil {
 		return nil, err
@@ -78,7 +77,7 @@ func NewOverReserve(cfg *apiconfig.NodeResourceTopologyCache, client ctrlclient.
 	return obj, nil
 }
 
-func (ov *OverReserve) GetCachedNRTCopy(ctx context.Context, nodeName string, pod *corev1.Pod) (*topologyv1alpha2.NodeResourceTopology, bool) {
+func (ov *OverReserve) GetCachedNRTCopy(ctx context.Context, nodeName string, pod *corev1.Pod) (*topologyv1alpha1.NodeResourceTopology, bool) {
 	ov.lock.Lock()
 	defer ov.lock.Unlock()
 	if ov.nodesWithForeignPods.IsSet(nodeName) {
@@ -208,9 +207,9 @@ func (ov *OverReserve) Resync() {
 	klog.V(6).InfoS("nrtcache: resync NodeTopology cache starting", "logID", logID)
 	defer klog.V(6).InfoS("nrtcache: resync NodeTopology cache complete", "logID", logID)
 
-	var nrtUpdates []*topologyv1alpha2.NodeResourceTopology
+	var nrtUpdates []*topologyv1alpha1.NodeResourceTopology
 	for _, nodeName := range nodeNames {
-		nrtCandidate := &topologyv1alpha2.NodeResourceTopology{}
+		nrtCandidate := &topologyv1alpha1.NodeResourceTopology{}
 		if err := ov.client.Get(context.Background(), types.NamespacedName{Name: nodeName}, nrtCandidate); err != nil {
 			klog.V(3).InfoS("nrtcache: failed to get NodeTopology", "logID", logID, "node", nodeName, "error", err)
 			continue
@@ -255,7 +254,7 @@ func (ov *OverReserve) Resync() {
 }
 
 // FlushNodes drops all the cached information about a given node, resetting its state clean.
-func (ov *OverReserve) FlushNodes(logID string, nrts ...*topologyv1alpha2.NodeResourceTopology) {
+func (ov *OverReserve) FlushNodes(logID string, nrts ...*topologyv1alpha1.NodeResourceTopology) {
 	ov.lock.Lock()
 	defer ov.lock.Unlock()
 	for _, nrt := range nrts {

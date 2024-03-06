@@ -17,6 +17,7 @@ limitations under the License.
 package util
 
 import (
+	topologyv1alpha1 "github.com/leemingeer/noderesourcetopology/pkg/apis/topology/v1alpha1"
 	"sync"
 
 	v1 "k8s.io/api/core/v1"
@@ -30,8 +31,6 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/client/fake"
 	"sigs.k8s.io/scheduler-plugins/apis/scheduling/v1alpha1"
-
-	topologyv1alpha2 "github.com/k8stopologyawareschedwg/noderesourcetopology-api/pkg/apis/topology/v1alpha2"
 )
 
 var _ framework.SharedLister = &fakeSharedLister{}
@@ -265,7 +264,7 @@ func NewFakeClient(objs ...runtime.Object) (client.Client, error) {
 	if err := v1alpha1.AddToScheme(scheme); err != nil {
 		return nil, err
 	}
-	if err := topologyv1alpha2.AddToScheme(scheme); err != nil {
+	if err := topologyv1alpha1.AddToScheme(scheme); err != nil {
 		return nil, err
 	}
 	return fake.NewClientBuilder().WithScheme(scheme).WithRuntimeObjects(objs...).Build(), nil

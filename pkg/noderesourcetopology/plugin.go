@@ -18,6 +18,7 @@ package noderesourcetopology
 
 import (
 	"fmt"
+	topologyv1alpha1 "github.com/leemingeer/noderesourcetopology/pkg/apis/topology/v1alpha1"
 
 	v1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/resource"
@@ -31,8 +32,7 @@ import (
 	"sigs.k8s.io/scheduler-plugins/apis/config/validation"
 	nrtcache "sigs.k8s.io/scheduler-plugins/pkg/noderesourcetopology/cache"
 
-	topologyapi "github.com/k8stopologyawareschedwg/noderesourcetopology-api/pkg/apis/topology"
-	topologyv1alpha2 "github.com/k8stopologyawareschedwg/noderesourcetopology-api/pkg/apis/topology/v1alpha2"
+	topologyapi "github.com/leemingeer/noderesourcetopology/pkg/apis/topology"
 )
 
 const (
@@ -44,7 +44,7 @@ var scheme = runtime.NewScheme()
 
 func init() {
 	utilruntime.Must(clientgoscheme.AddToScheme(scheme))
-	utilruntime.Must(topologyv1alpha2.AddToScheme(scheme))
+	utilruntime.Must(topologyv1alpha1.AddToScheme(scheme))
 }
 
 type NUMANode struct {
@@ -59,6 +59,29 @@ func (n *NUMANode) WithCosts(costs map[int]int) *NUMANode {
 }
 
 type NUMANodeList []NUMANode
+
+type Sockets map[int]NUMANodeList
+
+func (s *Sockets) ResMatchInAnySocket(nodeName string, resName v1.ResourceName, req resource.Quantity) bool {
+
+	for i, socket := range *s {
+		availableQuantity := resource.Quantity{}
+		// numa nodes of socket
+		for _, node := range socket {
+			if count, ok := node.Resources[resName]; ok {
+				availableQuantity.Add(count)
+			}
+		}
+		// 当前socket上的资源满足，直接返回，否则验证下一个socket
+		if availableQuantity.Cmp(req) >= 0 {
+			klog.V(5).InfoS("socket meet resource", "nodeName", nodeName, "resourceName", resName, "resourceRequest", req.Value(), "socketID", i, "total socket", len(*s), "available resource on socket", availableQuantity.Value())
+			return true
+		}
+		klog.V(5).InfoS("socket can't meet resource, try next...", "nodeName", nodeName, "resourceName", resName, "resourceRequest", req.Value(), "socketID", i, "total socket", len(*s), "available resource on socket", availableQuantity.Value())
+	}
+	klog.V(5).InfoS("node can't meet resource", "nodeName", nodeName, "resourceName", resName, "resourceRequest", req.Value(), "all available resource on node", s)
+	return false
+}
 
 func subtractFromNUMAs(resources v1.ResourceList, numaNodes NUMANodeList, nodes ...int) {
 	for resName, quantity := range resources {
@@ -93,8 +116,8 @@ func subtractFromNUMAs(resources v1.ResourceList, numaNodes NUMANodeList, nodes 
 	}
 }
 
-type filterFn func(pod *v1.Pod, zones topologyv1alpha2.ZoneList, nodeInfo *framework.NodeInfo) *framework.Status
-type scoringFn func(*v1.Pod, topologyv1alpha2.ZoneList) (int64, *framework.Status)
+type filterFn func(pod *v1.Pod, zones topologyv1alpha1.ZoneList, nodeInfo *framework.NodeInfo) *framework.Status
+type scoringFn func(*v1.Pod, topologyv1alpha1.ZoneList) (int64, *framework.Status)
 
 // TopologyMatch plugin which run simplified version of TopologyManager's admit handler
 type TopologyMatch struct {
@@ -166,7 +189,7 @@ func New(args runtime.Object, handle framework.Handle) (framework.Plugin, error)
 func (tm *TopologyMatch) EventsToRegister() []framework.ClusterEvent {
 	// To register a custom event, follow the naming convention at:
 	// https://git.k8s.io/kubernetes/pkg/scheduler/eventhandlers.go#L403-L410
-	nrtGVK := fmt.Sprintf("noderesourcetopologies.v1alpha2.%v", topologyapi.GroupName)
+	nrtGVK := fmt.Sprintf("noderesourcetopologies.v1alpha1.%v", topologyapi.GroupName)
 	return []framework.ClusterEvent{
 		{Resource: framework.Pod, ActionType: framework.Delete},
 		{Resource: framework.Node, ActionType: framework.Add | framework.UpdateNodeAllocatable},

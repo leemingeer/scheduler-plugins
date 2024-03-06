@@ -222,3 +222,91 @@ func TestGetForeignPodsDetectMode(t *testing.T) {
 		})
 	}
 }
+
+func TestGetSocketAvailable(t *testing.T) {
+	testCases := []struct {
+		description string
+		numaNodes   NUMANodeList
+		expected    []*corev1.ResourceList
+	}{
+		{
+			description: "resource per socket",
+			numaNodes: NUMANodeList{
+				{
+					NUMAID: 0,
+					Resources: corev1.ResourceList{
+						corev1.ResourceCPU:    *resource.NewQuantity(8, resource.DecimalSI),
+						corev1.ResourceMemory: resource.MustParse("10Gi"),
+						"gpu":                 resource.MustParse("1"),
+					},
+				},
+				{
+					NUMAID: 1,
+					Resources: corev1.ResourceList{
+						corev1.ResourceCPU:    *resource.NewQuantity(8, resource.DecimalSI),
+						corev1.ResourceMemory: resource.MustParse("10Gi"),
+						"nic":                 resource.MustParse("1"),
+					},
+				},
+				{
+					NUMAID: 2,
+					Resources: corev1.ResourceList{
+						corev1.ResourceCPU:    *resource.NewQuantity(8, resource.DecimalSI),
+						corev1.ResourceMemory: resource.MustParse("10Gi"),
+						"gpu":                 resource.MustParse("0"),
+					},
+				},
+				{
+					NUMAID: 3,
+					Resources: corev1.ResourceList{
+						corev1.ResourceCPU:    *resource.NewQuantity(16, resource.DecimalSI),
+						corev1.ResourceMemory: resource.MustParse("10Gi"),
+						"gpu":                 resource.MustParse("2"),
+					},
+				},
+				{
+					NUMAID: 4,
+					Resources: corev1.ResourceList{
+						corev1.ResourceCPU:    *resource.NewQuantity(16, resource.DecimalSI),
+						corev1.ResourceMemory: resource.MustParse("10Gi"),
+						"gpu":                 resource.MustParse("2"),
+					},
+				},
+			},
+			expected: []*corev1.ResourceList{
+				{
+					corev1.ResourceCPU:    resource.MustParse("40"),
+					corev1.ResourceMemory: resource.MustParse("40Gi"),
+					"gpu":                 resource.MustParse("3"),
+					"nic":                 resource.MustParse("1"),
+				},
+				{
+					corev1.ResourceCPU:    resource.MustParse("16"),
+					corev1.ResourceMemory: resource.MustParse("10Gi"),
+					"gpu":                 resource.MustParse("2"),
+					"nic":                 resource.MustParse("0"),
+				},
+			},
+		},
+	}
+	for _, testCase := range testCases {
+		t.Run(testCase.description, func(t *testing.T) {
+			sockets := createSocketList(testCase.numaNodes)
+			for i := 0; i <= len(testCase.numaNodes)/NPS; i++ {
+				res := sockets.GetSocketAvailable(i)
+				if !res.Cpu().Equal(*testCase.expected[i].Cpu()) {
+					t.Errorf("cpu expected %v to equal %v", res.Cpu(), testCase.expected[i].Cpu())
+				}
+				if !res.Memory().Equal(*testCase.expected[i].Memory()) {
+					t.Errorf("memory expected %v to equal %v", res.Memory(), testCase.expected[i].Memory())
+				}
+				if !res.Name("gpu", resource.DecimalSI).Equal(*testCase.expected[i].Name("gpu", resource.DecimalSI)) {
+					t.Errorf("gpu expected %v to equal %v", res.Name("gpu", resource.DecimalSI), testCase.expected[i].Name("gpu", resource.DecimalSI))
+				}
+				if !res.Name("nic", resource.DecimalSI).Equal(*testCase.expected[i].Name("nic", resource.DecimalSI)) {
+					t.Errorf("nic expected %v to equal %v", res.Name("nic", resource.DecimalSI), testCase.expected[i].Name("nic", resource.DecimalSI))
+				}
+			}
+		})
+	}
+}

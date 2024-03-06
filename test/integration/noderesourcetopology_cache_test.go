@@ -26,9 +26,7 @@ import (
 	"testing"
 	"time"
 
-	topologyv1alpha2 "github.com/k8stopologyawareschedwg/noderesourcetopology-api/pkg/apis/topology/v1alpha2"
 	"github.com/k8stopologyawareschedwg/podfingerprint"
-
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
@@ -47,6 +45,7 @@ import (
 
 	ctrlclient "sigs.k8s.io/controller-runtime/pkg/client"
 
+	topologyv1alpha1 "github.com/leemingeer/noderesourcetopology/pkg/apis/topology/v1alpha1"
 	schedconfig "sigs.k8s.io/scheduler-plugins/apis/config"
 	"sigs.k8s.io/scheduler-plugins/pkg/noderesourcetopology"
 	"sigs.k8s.io/scheduler-plugins/test/util"
@@ -84,7 +83,7 @@ func (p *podDesc) SetupPod(ns string, initContainer bool) {
 
 type testCase struct {
 	name                   string
-	nodeResourceTopologies []*topologyv1alpha2.NodeResourceTopology
+	nodeResourceTopologies []*topologyv1alpha1.NodeResourceTopology
 	podDescs               []podDesc
 }
 
@@ -126,9 +125,9 @@ func TestTopologyCachePluginWithoutUpdates(t *testing.T) {
 					expectedNode: anyNode,
 				},
 			},
-			nodeResourceTopologies: []*topologyv1alpha2.NodeResourceTopology{
+			nodeResourceTopologies: []*topologyv1alpha1.NodeResourceTopology{
 				MakeNRT().Name("fake-node-cache-1").
-					Attributes(topologyv1alpha2.AttributeList{
+					Attributes(topologyv1alpha1.AttributeList{
 						{
 							Name:  noderesourcetopology.AttributePolicy,
 							Value: "single-numa-node",
@@ -139,17 +138,17 @@ func TestTopologyCachePluginWithoutUpdates(t *testing.T) {
 						},
 					}).
 					Zone(
-						topologyv1alpha2.ResourceInfoList{
+						topologyv1alpha1.ResourceInfoList{
 							noderesourcetopology.MakeTopologyResInfo(cpu, "32", "30"),
 							noderesourcetopology.MakeTopologyResInfo(memory, "64Gi", "60Gi"),
 						}).
 					Zone(
-						topologyv1alpha2.ResourceInfoList{
+						topologyv1alpha1.ResourceInfoList{
 							noderesourcetopology.MakeTopologyResInfo(cpu, "32", "30"),
 							noderesourcetopology.MakeTopologyResInfo(memory, "64Gi", "62Gi"),
 						}).Obj(),
 				MakeNRT().Name("fake-node-cache-2").
-					Attributes(topologyv1alpha2.AttributeList{
+					Attributes(topologyv1alpha1.AttributeList{
 						{
 							Name:  noderesourcetopology.AttributePolicy,
 							Value: "single-numa-node",
@@ -160,12 +159,12 @@ func TestTopologyCachePluginWithoutUpdates(t *testing.T) {
 						},
 					}).
 					Zone(
-						topologyv1alpha2.ResourceInfoList{
+						topologyv1alpha1.ResourceInfoList{
 							noderesourcetopology.MakeTopologyResInfo(cpu, "32", "10"),
 							noderesourcetopology.MakeTopologyResInfo(memory, "64Gi", "14Gi"),
 						}).
 					Zone(
-						topologyv1alpha2.ResourceInfoList{
+						topologyv1alpha1.ResourceInfoList{
 							noderesourcetopology.MakeTopologyResInfo(cpu, "32", "8"),
 							noderesourcetopology.MakeTopologyResInfo(memory, "64Gi", "10Gi"),
 						}).Obj(),
@@ -215,9 +214,9 @@ func TestTopologyCachePluginWithoutUpdates(t *testing.T) {
 					expectedNode: "",
 				},
 			},
-			nodeResourceTopologies: []*topologyv1alpha2.NodeResourceTopology{
+			nodeResourceTopologies: []*topologyv1alpha1.NodeResourceTopology{
 				MakeNRT().Name("fake-node-cache-1").
-					Attributes(topologyv1alpha2.AttributeList{
+					Attributes(topologyv1alpha1.AttributeList{
 						{
 							Name:  noderesourcetopology.AttributePolicy,
 							Value: "single-numa-node",
@@ -228,17 +227,17 @@ func TestTopologyCachePluginWithoutUpdates(t *testing.T) {
 						},
 					}).
 					Zone(
-						topologyv1alpha2.ResourceInfoList{
+						topologyv1alpha1.ResourceInfoList{
 							noderesourcetopology.MakeTopologyResInfo(cpu, "32", "30"),
 							noderesourcetopology.MakeTopologyResInfo(memory, "64Gi", "60Gi"),
 						}).
 					Zone(
-						topologyv1alpha2.ResourceInfoList{
+						topologyv1alpha1.ResourceInfoList{
 							noderesourcetopology.MakeTopologyResInfo(cpu, "32", "30"),
 							noderesourcetopology.MakeTopologyResInfo(memory, "64Gi", "62Gi"),
 						}).Obj(),
 				MakeNRT().Name("fake-node-cache-2").
-					Attributes(topologyv1alpha2.AttributeList{
+					Attributes(topologyv1alpha1.AttributeList{
 						{
 							Name:  noderesourcetopology.AttributePolicy,
 							Value: "single-numa-node",
@@ -249,12 +248,12 @@ func TestTopologyCachePluginWithoutUpdates(t *testing.T) {
 						},
 					}).
 					Zone(
-						topologyv1alpha2.ResourceInfoList{
+						topologyv1alpha1.ResourceInfoList{
 							noderesourcetopology.MakeTopologyResInfo(cpu, "32", "10"),
 							noderesourcetopology.MakeTopologyResInfo(memory, "64Gi", "14Gi"),
 						}).
 					Zone(
-						topologyv1alpha2.ResourceInfoList{
+						topologyv1alpha1.ResourceInfoList{
 							noderesourcetopology.MakeTopologyResInfo(cpu, "32", "8"),
 							noderesourcetopology.MakeTopologyResInfo(memory, "64Gi", "10Gi"),
 						}).Obj(),
@@ -286,9 +285,9 @@ func TestTopologyCachePluginWithoutUpdates(t *testing.T) {
 					expectedNode: "",
 				},
 			},
-			nodeResourceTopologies: []*topologyv1alpha2.NodeResourceTopology{
+			nodeResourceTopologies: []*topologyv1alpha1.NodeResourceTopology{
 				MakeNRT().Name("fake-node-cache-1").
-					Attributes(topologyv1alpha2.AttributeList{
+					Attributes(topologyv1alpha1.AttributeList{
 						{
 							Name:  noderesourcetopology.AttributePolicy,
 							Value: "single-numa-node",
@@ -299,17 +298,17 @@ func TestTopologyCachePluginWithoutUpdates(t *testing.T) {
 						},
 					}).
 					Zone(
-						topologyv1alpha2.ResourceInfoList{
+						topologyv1alpha1.ResourceInfoList{
 							noderesourcetopology.MakeTopologyResInfo(cpu, "32", "30"),
 							noderesourcetopology.MakeTopologyResInfo(memory, "64Gi", "60Gi"),
 						}).
 					Zone(
-						topologyv1alpha2.ResourceInfoList{
+						topologyv1alpha1.ResourceInfoList{
 							noderesourcetopology.MakeTopologyResInfo(cpu, "32", "30"),
 							noderesourcetopology.MakeTopologyResInfo(memory, "64Gi", "62Gi"),
 						}).Obj(),
 				MakeNRT().Name("fake-node-cache-2").
-					Attributes(topologyv1alpha2.AttributeList{
+					Attributes(topologyv1alpha1.AttributeList{
 						{
 							Name:  noderesourcetopology.AttributePolicy,
 							Value: "single-numa-node",
@@ -320,12 +319,12 @@ func TestTopologyCachePluginWithoutUpdates(t *testing.T) {
 						},
 					}).
 					Zone(
-						topologyv1alpha2.ResourceInfoList{
+						topologyv1alpha1.ResourceInfoList{
 							noderesourcetopology.MakeTopologyResInfo(cpu, "32", "10"),
 							noderesourcetopology.MakeTopologyResInfo(memory, "64Gi", "14Gi"),
 						}).
 					Zone(
-						topologyv1alpha2.ResourceInfoList{
+						topologyv1alpha1.ResourceInfoList{
 							noderesourcetopology.MakeTopologyResInfo(cpu, "32", "8"),
 							noderesourcetopology.MakeTopologyResInfo(memory, "64Gi", "10Gi"),
 						}).Obj(),
@@ -355,9 +354,9 @@ func TestTopologyCachePluginWithoutUpdates(t *testing.T) {
 					expectedNode:  "fake-node-cache-1",
 				},
 			},
-			nodeResourceTopologies: []*topologyv1alpha2.NodeResourceTopology{
+			nodeResourceTopologies: []*topologyv1alpha1.NodeResourceTopology{
 				MakeNRT().Name("fake-node-cache-1").
-					Attributes(topologyv1alpha2.AttributeList{
+					Attributes(topologyv1alpha1.AttributeList{
 						{
 							Name:  noderesourcetopology.AttributePolicy,
 							Value: "single-numa-node",
@@ -368,17 +367,17 @@ func TestTopologyCachePluginWithoutUpdates(t *testing.T) {
 						},
 					}).
 					Zone(
-						topologyv1alpha2.ResourceInfoList{
+						topologyv1alpha1.ResourceInfoList{
 							noderesourcetopology.MakeTopologyResInfo(cpu, "32", "30"),
 							noderesourcetopology.MakeTopologyResInfo(memory, "64Gi", "60Gi"),
 						}).
 					Zone(
-						topologyv1alpha2.ResourceInfoList{
+						topologyv1alpha1.ResourceInfoList{
 							noderesourcetopology.MakeTopologyResInfo(cpu, "32", "30"),
 							noderesourcetopology.MakeTopologyResInfo(memory, "64Gi", "62Gi"),
 						}).Obj(),
 				MakeNRT().Name("fake-node-cache-2").
-					Attributes(topologyv1alpha2.AttributeList{
+					Attributes(topologyv1alpha1.AttributeList{
 						{
 							Name:  noderesourcetopology.AttributePolicy,
 							Value: "single-numa-node",
@@ -389,12 +388,12 @@ func TestTopologyCachePluginWithoutUpdates(t *testing.T) {
 						},
 					}).
 					Zone(
-						topologyv1alpha2.ResourceInfoList{
+						topologyv1alpha1.ResourceInfoList{
 							noderesourcetopology.MakeTopologyResInfo(cpu, "32", "10"),
 							noderesourcetopology.MakeTopologyResInfo(memory, "64Gi", "14Gi"),
 						}).
 					Zone(
-						topologyv1alpha2.ResourceInfoList{
+						topologyv1alpha1.ResourceInfoList{
 							noderesourcetopology.MakeTopologyResInfo(cpu, "32", "8"),
 							noderesourcetopology.MakeTopologyResInfo(memory, "64Gi", "10Gi"),
 						}).Obj(),
@@ -429,9 +428,9 @@ func TestTopologyCachePluginWithoutUpdates(t *testing.T) {
 					expectedNode:  "fake-node-cache-1",
 				},
 			},
-			nodeResourceTopologies: []*topologyv1alpha2.NodeResourceTopology{
+			nodeResourceTopologies: []*topologyv1alpha1.NodeResourceTopology{
 				MakeNRT().Name("fake-node-cache-1").
-					Attributes(topologyv1alpha2.AttributeList{
+					Attributes(topologyv1alpha1.AttributeList{
 						{
 							Name:  noderesourcetopology.AttributePolicy,
 							Value: "single-numa-node",
@@ -442,17 +441,17 @@ func TestTopologyCachePluginWithoutUpdates(t *testing.T) {
 						},
 					}).
 					Zone(
-						topologyv1alpha2.ResourceInfoList{
+						topologyv1alpha1.ResourceInfoList{
 							noderesourcetopology.MakeTopologyResInfo(cpu, "32", "30"),
 							noderesourcetopology.MakeTopologyResInfo(memory, "64Gi", "60Gi"),
 						}).
 					Zone(
-						topologyv1alpha2.ResourceInfoList{
+						topologyv1alpha1.ResourceInfoList{
 							noderesourcetopology.MakeTopologyResInfo(cpu, "32", "30"),
 							noderesourcetopology.MakeTopologyResInfo(memory, "64Gi", "62Gi"),
 						}).Obj(),
 				MakeNRT().Name("fake-node-cache-2").
-					Attributes(topologyv1alpha2.AttributeList{
+					Attributes(topologyv1alpha1.AttributeList{
 						{
 							Name:  noderesourcetopology.AttributePolicy,
 							Value: "single-numa-node",
@@ -463,12 +462,12 @@ func TestTopologyCachePluginWithoutUpdates(t *testing.T) {
 						},
 					}).
 					Zone(
-						topologyv1alpha2.ResourceInfoList{
+						topologyv1alpha1.ResourceInfoList{
 							noderesourcetopology.MakeTopologyResInfo(cpu, "32", "10"),
 							noderesourcetopology.MakeTopologyResInfo(memory, "64Gi", "14Gi"),
 						}).
 					Zone(
-						topologyv1alpha2.ResourceInfoList{
+						topologyv1alpha1.ResourceInfoList{
 							noderesourcetopology.MakeTopologyResInfo(cpu, "32", "8"),
 							noderesourcetopology.MakeTopologyResInfo(memory, "64Gi", "10Gi"),
 						}).Obj(),
@@ -483,7 +482,7 @@ func TestTopologyCachePluginWithoutUpdates(t *testing.T) {
 			cs := clientset.NewForConfigOrDie(globalKubeConfig)
 			scheme := runtime.NewScheme()
 			utilruntime.Must(clientgoscheme.AddToScheme(scheme))
-			utilruntime.Must(topologyv1alpha2.AddToScheme(scheme))
+			utilruntime.Must(topologyv1alpha1.AddToScheme(scheme))
 			extClient, err := ctrlclient.New(globalKubeConfig, ctrlclient.Options{Scheme: scheme})
 			if err != nil {
 				t.Fatalf("Failed to create client: %v", err)
@@ -669,7 +668,7 @@ func TestTopologyCachePluginWithUpdates(t *testing.T) {
 
 	scheme := runtime.NewScheme()
 	utilruntime.Must(clientgoscheme.AddToScheme(scheme))
-	utilruntime.Must(topologyv1alpha2.AddToScheme(scheme))
+	utilruntime.Must(topologyv1alpha1.AddToScheme(scheme))
 	cs := clientset.NewForConfigOrDie(globalKubeConfig)
 	extClient, err := ctrlclient.New(globalKubeConfig, ctrlclient.Options{Scheme: scheme})
 	if err != nil {
@@ -773,9 +772,9 @@ func TestTopologyCachePluginWithUpdates(t *testing.T) {
 		}
 
 		pfpSign := mkPFP("fake-node-cache-1", tt.podDescs[0].pod)
-		updatedNRTs := []*topologyv1alpha2.NodeResourceTopology{
+		updatedNRTs := []*topologyv1alpha1.NodeResourceTopology{
 			MakeNRT().Name("fake-node-cache-1").
-				Attributes(topologyv1alpha2.AttributeList{
+				Attributes(topologyv1alpha1.AttributeList{
 					{
 						Name:  noderesourcetopology.AttributePolicy,
 						Value: "single-numa-node",
@@ -793,12 +792,12 @@ func TestTopologyCachePluginWithUpdates(t *testing.T) {
 					podfingerprint.Annotation: pfpSign,
 				}).
 				Zone(
-					topologyv1alpha2.ResourceInfoList{
+					topologyv1alpha1.ResourceInfoList{
 						noderesourcetopology.MakeTopologyResInfo(cpu, "32", "6"),
 						noderesourcetopology.MakeTopologyResInfo(memory, "64Gi", "48Gi"),
 					}).
 				Zone(
-					topologyv1alpha2.ResourceInfoList{
+					topologyv1alpha1.ResourceInfoList{
 						noderesourcetopology.MakeTopologyResInfo(cpu, "32", "30"),
 						noderesourcetopology.MakeTopologyResInfo(memory, "64Gi", "62Gi"),
 					}).Obj(),
@@ -819,9 +818,9 @@ func TestTopologyCachePluginWithUpdates(t *testing.T) {
 		// When will the resync loop trigger? we can't predict. So we wait "long enough" before to send the trigger event
 		time.Sleep(time.Duration(5*matchArgs.CacheResyncPeriodSeconds) * time.Second)
 
-		updatedNRTs = []*topologyv1alpha2.NodeResourceTopology{
+		updatedNRTs = []*topologyv1alpha1.NodeResourceTopology{
 			MakeNRT().Name("fake-node-cache-1").
-				Attributes(topologyv1alpha2.AttributeList{
+				Attributes(topologyv1alpha1.AttributeList{
 					{
 						Name:  noderesourcetopology.AttributePolicy,
 						Value: "single-numa-node",
@@ -832,12 +831,12 @@ func TestTopologyCachePluginWithUpdates(t *testing.T) {
 					},
 				}).
 				Zone(
-					topologyv1alpha2.ResourceInfoList{
+					topologyv1alpha1.ResourceInfoList{
 						noderesourcetopology.MakeTopologyResInfo(cpu, "32", "6"),
 						noderesourcetopology.MakeTopologyResInfo(memory, "64Gi", "48Gi"),
 					}).
 				Zone(
-					topologyv1alpha2.ResourceInfoList{
+					topologyv1alpha1.ResourceInfoList{
 						noderesourcetopology.MakeTopologyResInfo(cpu, "32", "30"),
 						noderesourcetopology.MakeTopologyResInfo(memory, "64Gi", "62Gi"),
 					}).Obj(),

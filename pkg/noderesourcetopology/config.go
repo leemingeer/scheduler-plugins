@@ -17,10 +17,9 @@ limitations under the License.
 package noderesourcetopology
 
 import (
+	topologyv1alpha1 "github.com/leemingeer/noderesourcetopology/pkg/apis/topology/v1alpha1"
 	"k8s.io/klog/v2"
 	kubeletconfig "k8s.io/kubernetes/pkg/kubelet/apis/config"
-
-	topologyv1alpha2 "github.com/k8stopologyawareschedwg/noderesourcetopology-api/pkg/apis/topology/v1alpha2"
 )
 
 const (
@@ -57,7 +56,7 @@ func makeTopologyManagerConfigDefaults() TopologyManagerConfig {
 	}
 }
 
-func topologyManagerConfigFromNodeResourceTopology(nodeTopology *topologyv1alpha2.NodeResourceTopology) TopologyManagerConfig {
+func topologyManagerConfigFromNodeResourceTopology(nodeTopology *topologyv1alpha1.NodeResourceTopology) TopologyManagerConfig {
 	conf := makeTopologyManagerConfigDefaults()
 	// Backward compatibility (v1alpha2 and previous). Deprecated, will be removed when the NRT API moves to v1beta1.
 	updateTopologyManagerConfigFromTopologyPolicies(&conf, nodeTopology.Name, nodeTopology.TopologyPolicies)
@@ -66,7 +65,7 @@ func topologyManagerConfigFromNodeResourceTopology(nodeTopology *topologyv1alpha
 	return conf
 }
 
-func updateTopologyManagerConfigFromAttributes(conf *TopologyManagerConfig, attrs topologyv1alpha2.AttributeList) {
+func updateTopologyManagerConfigFromAttributes(conf *TopologyManagerConfig, attrs topologyv1alpha1.AttributeList) {
 	for _, attr := range attrs {
 		if attr.Name == AttributeScope && IsValidScope(attr.Value) {
 			conf.Scope = attr.Value
@@ -89,27 +88,27 @@ func updateTopologyManagerConfigFromTopologyPolicies(conf *TopologyManagerConfig
 		klog.V(4).InfoS("Ignoring extra policies", "node", nodeName, "policies count", len(topologyPolicies)-1)
 	}
 
-	policyName := topologyv1alpha2.TopologyManagerPolicy(topologyPolicies[0])
+	policyName := topologyv1alpha1.TopologyManagerPolicy(topologyPolicies[0])
 	klog.Warning("The `topologyPolicies` field is deprecated and will be removed with the NRT API v1beta1.")
 	klog.Warning("The `topologyPolicies` field is deprecated, please use top-level Attributes field instead.")
 
 	switch policyName {
-	case topologyv1alpha2.SingleNUMANodePodLevel:
+	case topologyv1alpha1.SingleNUMANodePodLevel:
 		conf.Policy = kubeletconfig.SingleNumaNodeTopologyManagerPolicy
 		conf.Scope = kubeletconfig.PodTopologyManagerScope
-	case topologyv1alpha2.SingleNUMANodeContainerLevel:
+	case topologyv1alpha1.SingleNUMANodeContainerLevel:
 		conf.Policy = kubeletconfig.SingleNumaNodeTopologyManagerPolicy
 		conf.Scope = kubeletconfig.ContainerTopologyManagerScope
-	case topologyv1alpha2.BestEffortPodLevel:
+	case topologyv1alpha1.BestEffortPodLevel:
 		conf.Policy = kubeletconfig.BestEffortTopologyManagerPolicy
 		conf.Scope = kubeletconfig.PodTopologyManagerScope
-	case topologyv1alpha2.BestEffortContainerLevel:
+	case topologyv1alpha1.BestEffortContainerLevel:
 		conf.Policy = kubeletconfig.BestEffortTopologyManagerPolicy
 		conf.Scope = kubeletconfig.ContainerTopologyManagerScope
-	case topologyv1alpha2.RestrictedPodLevel:
+	case topologyv1alpha1.RestrictedPodLevel:
 		conf.Policy = kubeletconfig.RestrictedTopologyManagerPolicy
 		conf.Scope = kubeletconfig.PodTopologyManagerScope
-	case topologyv1alpha2.RestrictedContainerLevel:
+	case topologyv1alpha1.RestrictedContainerLevel:
 		conf.Policy = kubeletconfig.RestrictedTopologyManagerPolicy
 		conf.Scope = kubeletconfig.ContainerTopologyManagerScope
 	}

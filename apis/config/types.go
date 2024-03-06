@@ -145,7 +145,8 @@ const (
 	// LeastAllocated strategy favors node with the most amount of available resource
 	LeastAllocated ScoringStrategyType = "LeastAllocated"
 	// LeastNUMANodes strategy favors nodes which requires least amount of NUMA nodes to satisfy resource requests for given pod
-	LeastNUMANodes ScoringStrategyType = "LeastNUMANodes"
+	LeastNUMANodes  ScoringStrategyType = "LeastNUMANodes"
+	SocketAlignment ScoringStrategyType = "SocketAlignment"
 )
 
 // ScoringStrategy define ScoringStrategyType for node resource topology plugin

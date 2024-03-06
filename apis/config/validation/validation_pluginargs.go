@@ -28,6 +28,7 @@ var validScoringStrategy = sets.NewString(
 	string(config.BalancedAllocation),
 	string(config.LeastAllocated),
 	string(config.LeastNUMANodes),
+	string(config.SocketAlignment),
 )
 
 func ValidateNodeResourceTopologyMatchArgs(path *field.Path, args *config.NodeResourceTopologyMatchArgs) error {

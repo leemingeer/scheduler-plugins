@@ -19,10 +19,9 @@ package noderesourcetopology
 import (
 	"encoding/json"
 	"fmt"
+	topologyv1alpha1 "github.com/leemingeer/noderesourcetopology/pkg/apis/topology/v1alpha1"
 
 	"k8s.io/klog/v2"
-
-	topologyv1alpha2 "github.com/k8stopologyawareschedwg/noderesourcetopology-api/pkg/apis/topology/v1alpha2"
 
 	"sigs.k8s.io/scheduler-plugins/pkg/noderesourcetopology/stringify"
 )
@@ -34,7 +33,7 @@ func logNumaNodes(desc, nodeName string, nodes NUMANodeList) {
 	}
 }
 
-func logNRT(desc string, nrtObj *topologyv1alpha2.NodeResourceTopology) {
+func logNRT(desc string, nrtObj *topologyv1alpha1.NodeResourceTopology) {
 	if !klog.V(6).Enabled() {
 		// avoid the expensive marshal operation
 		return
